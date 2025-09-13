@@ -134,6 +134,9 @@ fi
 HOST=${HOST:-"0.0.0.0"}
 PORT=${PORT:-"8000"}
 RELOAD=${RELOAD:-"true"}
+FRONTEND_PORT=${REACT_APP_PORT:-"3000"}
+PYTHON_ENV=${PYTHON_ENV:-"instadish"}
+DEBUG=${DEBUG:-"false"}
 
 # Start backend in background
 echo "🔧 Starting FastAPI backend..."
@@ -177,7 +180,7 @@ FRONTEND_PID=$!
 # Wait for frontend to start
 echo "⏳ Waiting for frontend to start..."
 for i in {1..60}; do
-    if curl -s http://localhost:3000 > /dev/null 2>&1; then
+    if curl -s http://localhost:$FRONTEND_PORT > /dev/null 2>&1; then
         echo "✅ Frontend is ready!"
         break
     fi
@@ -191,7 +194,7 @@ done
 
 echo ""
 echo "🎉 InstaDish is running!"
-echo "📱 Frontend: http://localhost:3000"
+echo "📱 Frontend: http://localhost:$FRONTEND_PORT"
 echo "🔧 Backend:  http://$HOST:$PORT"
 echo "🤖 Ollama:   $OLLAMA_URL"
 echo "📊 Health:   http://$HOST:$PORT/health"

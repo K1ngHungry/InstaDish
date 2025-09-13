@@ -29,7 +29,7 @@ function App() {
 
   const handleRecipeClick = async (recipeId: number) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/recipes/${recipeId}`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/recipes/${recipeId}`);
       if (response.ok) {
         const data = await response.json();
         if (data.success) {

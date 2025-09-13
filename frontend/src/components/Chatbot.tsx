@@ -48,7 +48,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ userIngredients, selectedRecipe }) =>
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/api/chatbot', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/chatbot`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -44,7 +44,7 @@ def _sort_recipes(recipes: List[Dict[str, Any]], sort_by: str, sort_order: str) 
 app = FastAPI(
     title="InstaDish API",
     description="AI-powered recipe search and chatbot service",
-    version="2.0.0"
+    version=os.getenv("API_VERSION", "2.0.0")
 )
 
 # CORS middleware - configurable via environment variables
@@ -119,8 +119,10 @@ async def startup_event():
         # Initialize Ollama service
         print("Initializing Ollama service...")
         ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
+        ollama_model = os.getenv("OLLAMA_MODEL", "llama2:7b")
+        ollama_timeout = int(os.getenv("OLLAMA_TIMEOUT", "30"))
         ollama_service = OllamaService(base_url=ollama_url)
-        print(f"Ollama service initialized successfully (URL: {ollama_url})")
+        print(f"Ollama service initialized successfully (URL: {ollama_url}, Model: {ollama_model})")
         
         # Initialize Sustainability service
         print("Initializing Sustainability service...")

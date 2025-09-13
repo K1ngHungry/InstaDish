@@ -29,7 +29,7 @@ const SustainabilityDashboard: React.FC<SustainabilityDashboardProps> = ({ selec
     setError(null);
     
     try {
-      const response = await fetch('http://localhost:8000/api/sustainability/analyze', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/sustainability/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
