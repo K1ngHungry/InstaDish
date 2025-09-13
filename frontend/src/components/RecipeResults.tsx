@@ -152,8 +152,7 @@ const RecipeResults: React.FC<RecipeResultsProps> = ({
               </div>
               {!recipe.match.hasAllCriticalIngredients && recipe.match.critical_missing.length > 0 && (
                 <div className="critical-missing">
-                  ⚠️ Missing critical: {recipe.match.critical_missing.slice(0, 2).join(', ')}
-                  {recipe.match.critical_missing.length > 2 && ` +${recipe.match.critical_missing.length - 2} more`}
+                  ⚠️ Missing critical: {formatMissingIngredients(recipe.match.critical_missing, 2)}
                 </div>
               )}
             </div>
@@ -162,7 +161,7 @@ const RecipeResults: React.FC<RecipeResultsProps> = ({
               <div className="recipe-sustainability">
                 <div className="sustainability-score">
                   <span className={`sustainability-level ${recipe.sustainability.level}`}>
-                    🌱 {recipe.sustainability.level.toUpperCase()}
+                    Sustainability: {recipe.sustainability.level.toUpperCase()}
                   </span>
                   <span className="sustainability-details">
                     {recipe.sustainability.carbon_footprint}kg CO₂
@@ -175,7 +174,7 @@ const RecipeResults: React.FC<RecipeResultsProps> = ({
               <div className="recipe-health">
                 <div className="health-score">
                   <span className={`health-level ${recipe.health.level}`}>
-                    🏥 {recipe.health.level.replace('_', ' ').toUpperCase()}
+                    Health: {recipe.health.level.replace('_', ' ').toUpperCase()}
                   </span>
                   <span className="health-details">
                     {recipe.health.score}/100

@@ -27,7 +27,7 @@ class HealthService:
             self.api_available = False
         else:
             self.api_available = True
-            print("✅ FatSecret API credentials loaded (OAuth 2.0)")
+            print(" FatSecret API credentials loaded (OAuth 2.0)")
     
     async def calculate_recipe_health_score(self, recipe: Dict[str, Any]) -> Dict[str, Any]:
         """Calculate health score for a recipe using FatSecret API"""
@@ -90,7 +90,7 @@ class HealthService:
                     self.access_token = token_data['access_token']
                     # Set expiration time (subtract 60 seconds for safety)
                     self.token_expires_at = time.time() + token_data['expires_in'] - 60
-                    print("✅ FatSecret OAuth 2.0 token obtained")
+                    print(" FatSecret OAuth 2.0 token obtained")
                     return self.access_token
                 else:
                     print(f"Token request failed: {response.status_code} - {response.text}")

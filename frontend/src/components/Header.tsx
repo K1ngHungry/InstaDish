@@ -5,7 +5,7 @@ const Header: React.FC = () => {
     <header className="header">
       <div className="header-content">
         <h1 className="logo">
-          🍳 InstaDish
+        🥑 InstaDish
         </h1>
         <p className="tagline">
           AI-Powered Recipe Discovery & Sustainability Analysis

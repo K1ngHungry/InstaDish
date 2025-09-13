@@ -43,7 +43,7 @@ class ApiService {
     return this.request(`/recipes/${id}`);
   }
 
-  async searchRecipes(ingredients, limit = 10, query = null, sortBy = 'match', sortOrder = 'desc') {
+  async searchRecipes(ingredients, limit = 9, query = null, sortBy = 'match', sortOrder = 'desc') {
     return this.request('/recipes/search', {
       method: 'POST',
       body: JSON.stringify({ 

@@ -58,7 +58,7 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose, onSelect }) 
           <div className="modal-actions">
             {onSelect && (
               <button className="select-recipe-button" onClick={() => onSelect(recipe)}>
-                📌 Select Recipe
+                 Select Recipe
               </button>
             )}
             <button className="close-button" onClick={onClose}>
@@ -126,7 +126,7 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose, onSelect }) 
               {recipe.match.critical_missing.length > 0 && (
                 <div className="classification-group">
                   <span className="classification-label critical">
-                    ❌ Critical Missing ({recipe.match.critical_missing.length})
+                     Critical Missing ({recipe.match.critical_missing.length})
                   </span>
                   <div className="classification-items">
                     {recipe.match.critical_missing.map((ingredient, index) => (
@@ -156,7 +156,7 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose, onSelect }) 
               {recipe.match.replaceable_missing.length > 0 && (
                 <div className="classification-group">
                   <span className="classification-label replaceable">
-                    ✅ Replaceable Missing ({recipe.match.replaceable_missing.length})
+                     Replaceable Missing ({recipe.match.replaceable_missing.length})
                   </span>
                   <div className="classification-items">
                     {recipe.match.replaceable_missing.map((ingredient, index) => (

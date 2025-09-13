@@ -82,7 +82,7 @@ export const useRecipes = () => {
         },
         body: JSON.stringify({
           ingredients,
-          limit: 10,
+          limit: 9,
           sort_by: sortBy,
           sort_order: sortOrder
         })

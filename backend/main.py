@@ -69,7 +69,7 @@ class RecipeSearchRequest(BaseModel):
     ingredients: Optional[List[str]] = None
     sort_by: Optional[str] = "match"  # match, sustainability, health
     sort_order: Optional[str] = "desc"  # asc, desc
-    limit: int = 10
+    limit: int = 9
 
 class ChatRequest(BaseModel):
     message: str

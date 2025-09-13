@@ -46,12 +46,12 @@ cd InstaDish
 ```
 
 This will:
-- ✅ Activate the conda environment automatically
-- ✅ Start Ollama in CPU-only mode (for stability)
-- ✅ Start the FastAPI backend with health monitoring
-- ✅ Start the React frontend
-- ✅ Monitor all services and restart if needed
-- ✅ Handle cleanup on Ctrl+C
+-  Activate the conda environment automatically
+-  Start Ollama in CPU-only mode (for stability)
+-  Start the FastAPI backend with health monitoring
+-  Start the React frontend
+-  Monitor all services and restart if needed
+-  Handle cleanup on Ctrl+C
 
 ### Environment Setup
 
@@ -70,20 +70,20 @@ This will:
 
 ### What's Included vs. What You Need to Install
 
-**✅ Included in Repository:**
+** Included in Repository:**
 - Source code for both frontend and backend
 - Recipe database (`recipes_small.csv`)
 - Pre-generated embeddings and FAISS index
 - Configuration files and startup scripts
 - Cleanup and process management scripts
 
-**📦 You Need to Install:**
+** You Need to Install:**
 - Node.js dependencies (`npm install` in frontend/)
 - Python dependencies (via conda environment)
 - Ollama and the AI model
 - Conda environment setup
 
-**🚫 Not Included (Correctly):**
+** Not Included (Correctly):**
 - `node_modules/` (installed via `npm install`)
 - `build/` directories (generated during build)
 - `.env` files (you create these)
@@ -274,9 +274,9 @@ The app analyzes ingredients for:
 ## 🔄 Smart Sorting
 
 Sort recipes by:
-- **🥘 Ingredient Match**: How well your ingredients match the recipe
-- **🌱 Sustainability**: Environmental impact score
-- **🏥 Health Score**: Nutritional health rating
+- **Ingredient Match**: How well your ingredients match the recipe
+- **Sustainability**: Environmental impact score
+- **Health Score**: Nutritional health rating
 
 Each sorting option supports both ascending and descending order.
 

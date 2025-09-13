@@ -12,9 +12,9 @@ const RecipeSorting: React.FC<RecipeSortingProps> = ({
   onSortChange 
 }) => {
   const sortOptions = [
-    { value: 'match', label: 'Ingredient Match', icon: '🥘' },
-    { value: 'sustainability', label: 'Sustainability', icon: '🌱' },
-    { value: 'health', label: 'Health Score', icon: '🏥' }
+    { value: 'match', label: 'Ingredient Match', icon: '' },
+    { value: 'sustainability', label: 'Sustainability', icon: '' },
+    { value: 'health', label: 'Health Score', icon: '' }
   ];
 
   const handleSortByChange = (newSortBy: string) => {
@@ -52,8 +52,8 @@ const RecipeSorting: React.FC<RecipeSortingProps> = ({
             onChange={(e) => handleSortOrderChange(e.target.value)}
             className="sort-select"
           >
-            <option value="desc">⬇️ High to Low</option>
-            <option value="asc">⬆️ Low to High</option>
+            <option value="desc">High to Low</option>
+            <option value="asc">Low to High</option>
           </select>
         </div>
       </div>

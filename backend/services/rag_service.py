@@ -66,9 +66,9 @@ class RAGService:
         
         # Check if we have cached embeddings
         if self._has_cached_embeddings():
-            print("✅ Found cached embeddings, loading from disk...")
+            print(" Found cached embeddings, loading from disk...")
             await self._load_cached_embeddings()
-            print(f"✅ RAG service ready with {len(self.recipe_metadata)} recipes (loaded from cache)")
+            print(f" RAG service ready with {len(self.recipe_metadata)} recipes (loaded from cache)")
         else:
             print("No cached embeddings found, generating new ones...")
             # Load recipes from CSV
@@ -729,7 +729,7 @@ class RAGService:
         self.ingredient_aliases = self._load_ingredient_data("ingredient_aliases.json")
         self.critical_ingredients = self._load_ingredient_data("critical_ingredients.json")
         self.ingredient_substitutions = self._load_ingredient_data("ingredient_substitutions.json")
-        print(f"✅ Reloaded: {len(self.ingredient_aliases)} aliases, {len(self.critical_ingredients)} categories, {len(self.ingredient_substitutions)} substitutions")
+        print(f" Reloaded: {len(self.ingredient_aliases)} aliases, {len(self.critical_ingredients)} categories, {len(self.ingredient_substitutions)} substitutions")
     
     def _find_similar_recipes_by_name(self, recipe_name: str, limit: int = 20) -> List[Dict[str, Any]]:
         """Find similar recipes by analyzing recipe names and ingredients"""
@@ -836,7 +836,7 @@ class RAGService:
                         cache_key = f"{recipe_name}_{ingredient}"
                         self.ingredient_patterns[cache_key] = criticality
         
-        print(f"✅ Pre-loaded patterns for {len(self.ingredient_patterns)} ingredient-recipe combinations")
+        print(f" Pre-loaded patterns for {len(self.ingredient_patterns)} ingredient-recipe combinations")
     
     def _calculate_enhanced_ingredient_match(self, recipe: Dict[str, Any], user_ingredients: List[str]) -> Dict[str, Any]:
         """Enhanced ingredient matching using pattern-based criticality"""
@@ -970,7 +970,7 @@ class RAGService:
             # Load FAISS index
             self.index = faiss.read_index(str(self.faiss_index_file))
             
-            print(f"✅ Loaded {len(self.recipe_metadata)} recipes from cache")
+            print(f" Loaded {len(self.recipe_metadata)} recipes from cache")
             
         except Exception as e:
             print(f" Error loading cached embeddings: {e}")
