@@ -885,6 +885,104 @@ body {
   font-weight: 600 !important;
 }
 
+/* Ingredient Classification Styles */
+.weighted-indicator {
+  font-size: 0.7rem;
+  color: #666;
+  font-style: italic;
+}
+
+.critical-missing {
+  background: #ffebee;
+  border: 1px solid #f44336;
+  border-radius: 6px;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #d32f2f;
+  font-weight: 500;
+}
+
+.ingredient-classification {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.ingredient-classification h4 {
+  margin: 0 0 0.75rem 0;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.classification-group {
+  margin-bottom: 0.75rem;
+}
+
+.classification-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+.classification-label.critical {
+  color: #d32f2f;
+}
+
+.classification-label.important {
+  color: #f57c00;
+}
+
+.classification-label.replaceable {
+  color: #2e7d32;
+}
+
+.classification-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.classification-item {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  color: #2c3e50;
+}
+
+.substitution-suggestions {
+  background: #e8f5e8;
+  border: 1px solid #4caf50;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.substitution-suggestions h5 {
+  margin: 0 0 0.5rem 0;
+  color: #2e7d32;
+  font-size: 0.9rem;
+}
+
+.substitution-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.substitution-item {
+  background: white;
+  border: 1px solid #4caf50;
+  border-radius: 4px;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.75rem;
+  color: #2e7d32;
+}
+
 .chatbot-messages {
   height: 400px;
   overflow-y: auto;

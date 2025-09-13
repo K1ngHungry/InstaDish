@@ -1,0 +1,7 @@
+{
+  "main course": ["protein", "meat", "chicken", "beef", "fish", "tofu", "egg", "pork", "lamb", "turkey"],
+  "soup": ["broth", "stock", "base", "bouillon"],
+  "salad": ["lettuce", "greens", "spinach", "arugula", "kale"],
+  "side dish": ["bread", "pasta", "rice", "noodle", "quinoa", "potato"],
+  "sauce": ["sauce", "dressing", "marinade", "gravy"]
+}

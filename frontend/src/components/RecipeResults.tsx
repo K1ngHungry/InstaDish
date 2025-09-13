@@ -13,8 +13,14 @@ interface Recipe {
     matches: number;
     total: number;
     percentage: number;
+    weighted_percentage: number;
     missing: string[];
+    critical_missing: string[];
+    important_missing: string[];
+    replaceable_missing: string[];
+    substitution_suggestions: { [key: string]: string[] };
     hasAllIngredients: boolean;
+    hasAllCriticalIngredients: boolean;
   };
   sustainability?: {
     score: number;
@@ -93,11 +99,20 @@ const RecipeResults: React.FC<RecipeResultsProps> = ({
 
             <div className="recipe-match">
               <div className="match-percentage">
-                {recipe.match.percentage}% match
+                {recipe.match.weighted_percentage || recipe.match.percentage}% match
+                {recipe.match.weighted_percentage && recipe.match.weighted_percentage !== recipe.match.percentage && (
+                  <span className="weighted-indicator"> (weighted)</span>
+                )}
               </div>
               <div className="match-details">
                 {recipe.match.matches}/{recipe.match.total} ingredients
               </div>
+              {!recipe.match.hasAllCriticalIngredients && recipe.match.critical_missing.length > 0 && (
+                <div className="critical-missing">
+                  ⚠️ Missing critical: {recipe.match.critical_missing.slice(0, 2).join(', ')}
+                  {recipe.match.critical_missing.length > 2 && ` +${recipe.match.critical_missing.length - 2} more`}
+                </div>
+              )}
             </div>
 
             {recipe.sustainability && (

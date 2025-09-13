@@ -41,12 +41,12 @@ else
         conda activate instadish
         
         if [[ "$CONDA_DEFAULT_ENV" != "instadish" ]]; then
-            echo "❌ Failed to activate instadish environment"
-            echo "💡 Please run: conda activate instadish"
+            echo "Failed to activate instadish environment"
+            echo "Please run: conda activate instadish"
             exit 1
         fi
     else
-        echo "❌ Conda not found. Please install conda first."
+        echo "Conda not found. Please install conda first."
         exit 1
     fi
 fi

@@ -65,7 +65,7 @@ Current context:"""
             if selected_recipe.get('sustainability'):
                 sustain = selected_recipe['sustainability']
                 prompt += f"\nSustainability: {sustain['level'].upper()} (Score: {sustain['score']}/3)"
-            prompt += "\n\nFocus your advice on this selected recipe! Provide cooking tips, substitutions, and detailed guidance."
+            prompt += "\n\nFocus your advice on this selected recipe! Provide cooking tips, substitutions, and detailed guidance. Also, consider similar recipes in case the user asks."
         
         if relevant_recipes and not selected_recipe:
             prompt += "\nRelevant recipes:"
@@ -75,7 +75,7 @@ Current context:"""
                     match = recipe['match']
                     prompt += f" ({match['percentage']}% match)"
         
-        prompt += "\n\nBe helpful, use emojis, and suggest recipes from the context! 🍳"
+        prompt += "\n\nBe helpful and suggest recipes from the context! 🍳"
         
         return prompt
     

@@ -13,8 +13,14 @@ interface Recipe {
     matches: number;
     total: number;
     percentage: number;
+    weighted_percentage: number;
     missing: string[];
+    critical_missing: string[];
+    important_missing: string[];
+    replaceable_missing: string[];
+    substitution_suggestions: { [key: string]: string[] };
     hasAllIngredients: boolean;
+    hasAllCriticalIngredients: boolean;
   };
   sustainability?: {
     score: number;

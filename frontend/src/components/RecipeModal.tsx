@@ -13,8 +13,14 @@ interface Recipe {
     matches: number;
     total: number;
     percentage: number;
+    weighted_percentage: number;
     missing: string[];
+    critical_missing: string[];
+    important_missing: string[];
+    replaceable_missing: string[];
+    substitution_suggestions: { [key: string]: string[] };
     hasAllIngredients: boolean;
+    hasAllCriticalIngredients: boolean;
   };
   estimated_calories?: number;
   sustainability?: {
@@ -107,6 +113,75 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose, onSelect }) 
               </div>
             )}
           </div>
+
+          {recipe.match && (
+            <div className="ingredient-classification">
+              <h4>Ingredient Analysis</h4>
+              
+              {recipe.match.critical_missing.length > 0 && (
+                <div className="classification-group">
+                  <span className="classification-label critical">
+                    ❌ Critical Missing ({recipe.match.critical_missing.length})
+                  </span>
+                  <div className="classification-items">
+                    {recipe.match.critical_missing.map((ingredient, index) => (
+                      <div key={index} className="classification-item">
+                        {ingredient}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {recipe.match.important_missing.length > 0 && (
+                <div className="classification-group">
+                  <span className="classification-label important">
+                    ⚠️ Important Missing ({recipe.match.important_missing.length})
+                  </span>
+                  <div className="classification-items">
+                    {recipe.match.important_missing.map((ingredient, index) => (
+                      <div key={index} className="classification-item">
+                        {ingredient}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {recipe.match.replaceable_missing.length > 0 && (
+                <div className="classification-group">
+                  <span className="classification-label replaceable">
+                    ✅ Replaceable Missing ({recipe.match.replaceable_missing.length})
+                  </span>
+                  <div className="classification-items">
+                    {recipe.match.replaceable_missing.map((ingredient, index) => (
+                      <div key={index} className="classification-item">
+                        {ingredient}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {Object.keys(recipe.match.substitution_suggestions).length > 0 && (
+                <div className="substitution-suggestions">
+                  <h5>💡 Substitution Suggestions:</h5>
+                  {Object.entries(recipe.match.substitution_suggestions).map(([ingredient, suggestions]) => (
+                    <div key={ingredient} style={{ marginBottom: '0.5rem' }}>
+                      <strong>{ingredient}:</strong>
+                      <div className="substitution-list">
+                        {suggestions.map((suggestion, index) => (
+                          <span key={index} className="substitution-item">
+                            {suggestion}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="recipe-content">
             <div className="ingredients-section">

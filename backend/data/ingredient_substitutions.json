@@ -1,0 +1,19 @@
+{
+  "butter": ["oil", "margarine", "coconut oil"],
+  "milk": ["almond milk", "soy milk", "oat milk", "coconut milk"],
+  "egg": ["flax egg", "applesauce", "banana", "yogurt"],
+  "sugar": ["honey", "maple syrup", "stevia", "brown sugar"],
+  "flour": ["almond flour", "coconut flour", "oat flour"],
+  "oil": ["butter", "coconut oil", "olive oil"],
+  "onion": ["shallot", "leek", "chives"],
+  "garlic": ["garlic powder", "ginger", "shallot"],
+  "tomato": ["tomato paste", "canned tomatoes", "cherry tomatoes"],
+  "cheese": ["nutritional yeast", "vegan cheese", "cream cheese"],
+  "chicken": ["tofu", "tempeh", "turkey", "fish"],
+  "beef": ["lamb", "pork", "turkey", "mushrooms"],
+  "rice": ["quinoa", "cauliflower rice", "barley"],
+  "pasta": ["zucchini noodles", "spaghetti squash", "rice noodles"],
+  "bread": ["lettuce wrap", "tortilla", "pita"],
+  "salt": ["soy sauce", "tamari", "miso paste"],
+  "pepper": ["cayenne", "paprika", "chili powder"]
+}

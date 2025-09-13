@@ -80,25 +80,25 @@ async def startup_event():
     
     try:
         # Initialize RAG service
-        print("🔄 Initializing RAG service...")
+        print("Initializing RAG service...")
         rag_service = RAGService()
         await rag_service.initialize()
-        print("✅ RAG service initialized successfully")
+        print("RAG service initialized successfully")
         
         # Initialize Ollama service
-        print("🔄 Initializing Ollama service...")
+        print("Initializing Ollama service...")
         ollama_service = OllamaService()
-        print("✅ Ollama service initialized successfully")
+        print("Ollama service initialized successfully")
         
         # Initialize Sustainability service
-        print("🔄 Initializing Sustainability service...")
+        print("Initializing Sustainability service...")
         sustainability_service = SustainabilityService()
-        print("✅ Sustainability service initialized successfully")
+        print("Sustainability service initialized successfully")
         
-        print("🎉 InstaDish Backend ready!")
+        print("InstaDish Backend ready!")
         
     except Exception as e:
-        print(f"❌ Failed to initialize backend: {e}")
+        print(f"Failed to initialize backend: {e}")
         raise
 
 @app.get("/health")
@@ -311,6 +311,26 @@ async def analyze_sustainability(request: SustainabilityRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Sustainability analysis failed: {str(e)}")
+
+@app.post("/api/admin/reload-ingredients")
+async def reload_ingredient_data():
+    """Reload ingredient data from JSON files (admin endpoint)"""
+    if not rag_service:
+        raise HTTPException(status_code=503, detail="RAG service not available")
+    
+    try:
+        rag_service.reload_ingredient_data()
+        return {
+            "success": True,
+            "message": "Ingredient data reloaded successfully",
+            "data": {
+                "aliases_count": len(rag_service.ingredient_aliases),
+                "critical_categories_count": len(rag_service.critical_ingredients),
+                "substitutions_count": len(rag_service.ingredient_substitutions)
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to reload ingredient data: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(

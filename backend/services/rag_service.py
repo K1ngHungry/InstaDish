@@ -29,34 +29,52 @@ class RAGService:
         self.texts_file = self.data_dir / "recipe_texts.json"
         self.config_file = self.data_dir / "index_config.json"
         
+        # Load ingredient data from JSON files
+        self.ingredient_aliases = self._load_ingredient_data("ingredient_aliases.json")
+        self.critical_ingredients = self._load_ingredient_data("critical_ingredients.json")
+        self.ingredient_substitutions = self._load_ingredient_data("ingredient_substitutions.json")
+    
+    def _load_ingredient_data(self, filename: str) -> dict:
+        """Load ingredient data from JSON file"""
+        file_path = self.data_dir / filename
+        try:
+            with open(file_path, 'r') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            print(f"Warning: {filename} not found, using empty data")
+            return {}
+        except json.JSONDecodeError as e:
+            print(f"Error loading {filename}: {e}")
+            return {}
+        
     async def initialize(self):
         """Initialize the RAG service with FAISS index and embeddings"""
-        print("🔄 Loading sentence transformer model...")
+        print("Loading sentence transformer model...")
         
         # Load sentence transformer model
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
-        print("✅ Sentence transformer model loaded")
+        print("Sentence transformer model loaded")
         
         # Check if we have cached embeddings
         if self._has_cached_embeddings():
-            print("🔄 Loading cached embeddings and FAISS index...")
+            print("✅ Found cached embeddings, loading from disk...")
             await self._load_cached_embeddings()
-            print(f"✅ RAG service ready with {len(self.recipe_metadata)} recipes (cached)")
+            print(f"✅ RAG service ready with {len(self.recipe_metadata)} recipes (loaded from cache)")
         else:
-            print("🔄 No cached embeddings found, generating new ones...")
+            print("No cached embeddings found, generating new ones...")
             # Load recipes from CSV
-            print("🔄 Loading recipes from CSV...")
+            print("Loading recipes from CSV...")
             await self._load_recipes()
             
             # Generate embeddings and create FAISS index
-            print("🔄 Generating embeddings and creating FAISS index...")
+            print("Generating embeddings and creating FAISS index...")
             await self._create_faiss_index()
             
             # Save embeddings to disk
-            print("🔄 Saving embeddings to disk...")
+            print("Saving embeddings to disk...")
             await self._save_embeddings()
             
-            print(f"✅ RAG service ready with {len(self.recipe_metadata)} recipes (new)")
+            print(f"RAG service ready with {len(self.recipe_metadata)} recipes (new)")
         
     async def _load_recipes(self):
         """Load recipes from CSV file"""
@@ -107,12 +125,12 @@ class RAGService:
             self.recipe_metadata.append(recipe_data)
             self.recipe_texts.append(searchable_text)
         
-        print(f"📊 Loaded {len(self.recipe_metadata)} recipes")
+        print(f" Loaded {len(self.recipe_metadata)} recipes")
         
     async def _create_faiss_index(self):
         """Create FAISS index from recipe texts"""
         # Generate embeddings
-        print("🔄 Generating embeddings...")
+        print("Generating embeddings...")
         embeddings = await self._generate_embeddings(self.recipe_texts)
         
         # Create FAISS index
@@ -125,7 +143,7 @@ class RAGService:
         # Add embeddings to index
         self.index.add(embeddings.astype('float32'))
         
-        print(f"✅ FAISS index created with {self.index.ntotal} vectors")
+        print(f" FAISS index created with {self.index.ntotal} vectors")
         
     async def _generate_embeddings(self, texts: List[str]) -> np.ndarray:
         """Generate embeddings for texts using sentence transformer"""
@@ -205,50 +223,115 @@ class RAGService:
                 "hasAllIngredients": False
             }
         
-        user_ingredients_lower = [ing.lower().strip() for ing in user_ingredients]
-        recipe_tags_lower = [tag.lower().strip() for tag in recipe['ingredient_tags']]
+        # Normalize ingredients using hybrid approach
+        user_ingredients_normalized = [self._normalize_ingredient(ing) for ing in user_ingredients]
+        recipe_tags_normalized = [self._normalize_ingredient(tag) for tag in recipe['ingredient_tags']]
         
         matches = 0
         missing = []
         
-        for tag in recipe_tags_lower:
-            if any(user_ing in tag or tag in user_ing for user_ing in user_ingredients_lower):
+        critical_missing = []
+        important_missing = []
+        replaceable_missing = []
+        
+        for i, recipe_ingredient in enumerate(recipe_tags_normalized):
+            original_ingredient = recipe['ingredient_tags'][i]
+            if self._ingredients_match(recipe_ingredient, user_ingredients_normalized):
                 matches += 1
             else:
-                missing.append(tag)
+                # Classify missing ingredient importance
+                importance = self._classify_ingredient_importance(original_ingredient, recipe.get('category', ''))
+                if importance == 'critical':
+                    critical_missing.append(original_ingredient)
+                elif importance == 'important':
+                    important_missing.append(original_ingredient)
+                else:
+                    replaceable_missing.append(original_ingredient)
         
-        total = len(recipe_tags_lower)
+        # Combine missing ingredients with importance info
+        missing = critical_missing + important_missing + replaceable_missing
+        
+        total = len(recipe_tags_normalized)
         percentage = (matches / total * 100) if total > 0 else 0
+        
+        # Calculate weighted score (critical ingredients count more)
+        # Count actual matches by importance level
+        critical_matches = 0
+        important_matches = 0
+        replaceable_matches = 0
+        
+        for i, recipe_ingredient in enumerate(recipe_tags_normalized):
+            original_ingredient = recipe['ingredient_tags'][i]
+            if self._ingredients_match(recipe_ingredient, user_ingredients_normalized):
+                # This ingredient is matched, count it by importance
+                importance = self._classify_ingredient_importance(original_ingredient, recipe.get('category', ''))
+                if importance == 'critical':
+                    critical_matches += 1
+                elif importance == 'important':
+                    important_matches += 1
+                else:
+                    replaceable_matches += 1
+        
+        # Calculate total possible weighted score
+        total_critical = len(critical_missing) + critical_matches
+        total_important = len(important_missing) + important_matches
+        total_replaceable = len(replaceable_missing) + replaceable_matches
+        
+        # Weighted percentage (critical=3, important=2, replaceable=1)
+        if total_critical + total_important + total_replaceable == 0:
+            weighted_score = 0
+        else:
+            max_weighted_score = (total_critical * 3 + total_important * 2 + total_replaceable * 1)
+            actual_weighted_score = (critical_matches * 3 + important_matches * 2 + replaceable_matches * 1)
+            weighted_score = (actual_weighted_score / max_weighted_score) * 100
+        
+        # Generate substitution suggestions for missing ingredients
+        substitution_suggestions = {}
+        for ingredient in missing[:5]:  # Limit to first 5 missing ingredients
+            subs = self._get_ingredient_substitution_suggestions(ingredient, recipe.get('category', ''))
+            if subs:
+                substitution_suggestions[ingredient] = subs
         
         return {
             "matches": matches,
             "total": total,
             "percentage": round(percentage, 1),
+            "weighted_percentage": round(weighted_score, 1),
             "missing": missing,
-            "hasAllIngredients": matches == total
+            "critical_missing": critical_missing,
+            "important_missing": important_missing,
+            "replaceable_missing": replaceable_missing,
+            "substitution_suggestions": substitution_suggestions,
+            "hasAllIngredients": matches == total,
+            "hasAllCriticalIngredients": len(critical_missing) == 0
         }
         
     def _determine_category(self, ingredients: List[str]) -> str:
         """Determine recipe category based on ingredients"""
         if not ingredients:
-            return "Other"
+            return "Main Course"
             
         ingredients_lower = ' '.join(ingredients).lower()
         
-        if any(word in ingredients_lower for word in ['chicken', 'beef', 'pork', 'lamb', 'turkey']):
-            return "Main Course"
-        elif any(word in ingredients_lower for word in ['cake', 'cookie', 'pie', 'dessert', 'sugar', 'chocolate']):
-            return "Dessert"
-        elif any(word in ingredients_lower for word in ['soup', 'broth', 'stock']):
+        # Check for specific dish types first (more specific patterns)
+        if any(word in ingredients_lower for word in ['soup', 'broth', 'stock', 'bouillon']):
             return "Soup"
-        elif any(word in ingredients_lower for word in ['salad', 'lettuce', 'spinach']):
-            return "Salad"
-        elif any(word in ingredients_lower for word in ['bread', 'pasta', 'rice', 'noodle']):
-            return "Side Dish"
-        elif any(word in ingredients_lower for word in ['sauce', 'dressing', 'marinade']):
+        elif any(word in ingredients_lower for word in ['sauce', 'dressing', 'marinade', 'gravy']):
             return "Sauce"
-        else:
+        elif any(word in ingredients_lower for word in ['salad', 'lettuce', 'arugula', 'kale']):
+            # Only classify as salad if it's clearly a salad (not just containing greens)
+            if any(word in ingredients_lower for word in ['chicken', 'beef', 'pork', 'fish', 'egg', 'tofu']):
+                return "Main Course"  # Protein + greens = main course
+            return "Salad"
+        elif any(word in ingredients_lower for word in ['bread', 'pasta', 'rice', 'noodle', 'quinoa']):
+            # Only classify as side dish if it's clearly a side (not a main with protein)
+            if any(word in ingredients_lower for word in ['chicken', 'beef', 'pork', 'fish', 'egg', 'tofu']):
+                return "Main Course"  # Protein + starch = main course
+            return "Side Dish"
+        elif any(word in ingredients_lower for word in ['chicken', 'beef', 'pork', 'lamb', 'turkey', 'fish', 'salmon', 'tuna', 'egg', 'tofu']):
             return "Main Course"
+        else:
+            return "Main Course"  # Default to main course
             
     def _estimate_prep_time(self, ingredients: List[str], instructions: List[str]) -> str:
         """Estimate preparation time"""
@@ -408,10 +491,154 @@ class RAGService:
             'breakdown': breakdown
         }
     
+    def _normalize_ingredient(self, ingredient: str) -> str:
+        """Normalize ingredient by removing plurals, quantities, and descriptors"""
+        if not ingredient:
+            return ""
+        
+        # Convert to lowercase and strip
+        normalized = ingredient.lower().strip()
+        
+        # Remove common quantity words and numbers
+        quantity_words = [
+            'cup', 'cups', 'tablespoon', 'tablespoons', 'tbsp', 'tsp', 'teaspoon', 'teaspoons',
+            'pound', 'pounds', 'lb', 'lbs', 'ounce', 'ounces', 'oz', 'gram', 'grams', 'g',
+            'kilogram', 'kilograms', 'kg', 'liter', 'liters', 'l', 'milliliter', 'milliliters', 'ml',
+            'pinch', 'dash', 'handful', 'bunch', 'clove', 'cloves', 'slice', 'slices',
+            'can', 'cans', 'jar', 'jars', 'bottle', 'bottles', 'package', 'packages',
+            'large', 'medium', 'small', 'extra', 'fresh', 'dried', 'frozen', 'canned',
+            'chopped', 'diced', 'sliced', 'minced', 'grated', 'shredded', 'crushed',
+            'boneless', 'skinless', 'whole', 'halved', 'quartered', 'cubed'
+        ]
+        
+        # Remove numbers and fractions
+        import re
+        normalized = re.sub(r'\d+/\d+|\d+\.\d+|\d+', '', normalized)
+        
+        # Remove quantity words
+        words = normalized.split()
+        words = [word for word in words if word not in quantity_words]
+        normalized = ' '.join(words)
+        
+        # Remove common prefixes/suffixes
+        normalized = re.sub(r'^(a|an|the)\s+', '', normalized)
+        normalized = re.sub(r'\s+(and|or|with|without)\s+.*$', '', normalized)
+        
+        # Handle plurals - improved approach
+        if normalized.endswith('ies'):
+            normalized = normalized[:-3] + 'y'
+        elif normalized.endswith('ches') or normalized.endswith('shes') or normalized.endswith('xes') or normalized.endswith('zes'):
+            # Keep as is for words ending in ch, sh, x, z
+            pass
+        elif normalized.endswith('oes'):
+            normalized = normalized[:-2]  # potatoes -> potato
+        elif normalized.endswith('s') and len(normalized) > 3:
+            normalized = normalized[:-1]  # eggs -> egg
+        
+        # Clean up extra spaces
+        normalized = ' '.join(normalized.split())
+        
+        return normalized
+    
+    def _ingredients_match(self, recipe_ingredient: str, user_ingredients: list) -> bool:
+        """Check if a recipe ingredient matches any user ingredient using hybrid approach"""
+        if not recipe_ingredient or not user_ingredients:
+            return False
+        
+        # 1. Exact match after normalization
+        if recipe_ingredient in user_ingredients:
+            return True
+        
+        # 2. Substring match (one contains the other)
+        for user_ing in user_ingredients:
+            if recipe_ingredient in user_ing or user_ing in recipe_ingredient:
+                return True
+        
+        # 3. Fuzzy matching for close matches
+        from difflib import SequenceMatcher
+        
+        for user_ing in user_ingredients:
+            similarity = SequenceMatcher(None, recipe_ingredient, user_ing).ratio()
+            if similarity >= 0.8:  # 80% similarity threshold
+                return True
+        
+        # 4. Check ingredient aliases
+        if self._check_ingredient_aliases(recipe_ingredient, user_ingredients):
+            return True
+        
+        return False
+    
+    def _check_ingredient_aliases(self, recipe_ingredient: str, user_ingredients: list) -> bool:
+        """Check if ingredients match through common aliases"""
+        # Check if recipe ingredient matches any alias group
+        for base_ingredient, alias_list in self.ingredient_aliases.items():
+            if recipe_ingredient in alias_list:
+                # Check if any user ingredient is in the same alias group
+                for user_ing in user_ingredients:
+                    if user_ing in alias_list:
+                        return True
+        
+        return False
+    
+    def _is_critical_ingredient(self, ingredient: str, recipe_category: str) -> bool:
+        """Check if an ingredient is critical for a recipe category"""
+        # Normalize the ingredient
+        normalized = self._normalize_ingredient(ingredient)
+        
+        # Get critical ingredients for this category from loaded data
+        category_critical = self.critical_ingredients.get(recipe_category.lower(), [])
+        
+        # Check if ingredient matches any critical ingredient
+        for critical in category_critical:
+            if critical in normalized or normalized in critical:
+                return True
+        
+        # Also check for primary proteins (always critical in main dishes)
+        primary_proteins = ['chicken', 'beef', 'pork', 'fish', 'salmon', 'tuna', 'tofu', 'lamb', 'turkey']
+        if any(protein in normalized for protein in primary_proteins):
+            return True
+        
+        return False
+    
+    def _classify_ingredient_importance(self, ingredient: str, recipe_category: str) -> str:
+        """Classify ingredient as critical, important, or replaceable"""
+        if self._is_critical_ingredient(ingredient, recipe_category):
+            return 'critical'
+        
+        # Check if it's important (secondary but still significant)
+        important_ingredients = [
+            'onion', 'garlic', 'tomato', 'cheese', 'milk', 'cream', 'butter', 'oil',
+            'salt', 'pepper', 'herbs', 'spices', 'vegetable', 'carrot', 'celery'
+        ]
+        
+        normalized = self._normalize_ingredient(ingredient)
+        if any(important in normalized for important in important_ingredients):
+            return 'important'
+        
+        return 'replaceable'
+    
+    def _get_ingredient_substitution_suggestions(self, ingredient: str, recipe_category: str) -> list:
+        """Get substitution suggestions for an ingredient"""
+        normalized = self._normalize_ingredient(ingredient)
+        
+        # Find substitutions for this ingredient from loaded data
+        for key, subs in self.ingredient_substitutions.items():
+            if key in normalized or normalized in key:
+                return subs
+        
+        return []
+    
+    def reload_ingredient_data(self):
+        """Reload ingredient data from JSON files (useful for updates)"""
+        print("Reloading ingredient data from JSON files...")
+        self.ingredient_aliases = self._load_ingredient_data("ingredient_aliases.json")
+        self.critical_ingredients = self._load_ingredient_data("critical_ingredients.json")
+        self.ingredient_substitutions = self._load_ingredient_data("ingredient_substitutions.json")
+        print(f"✅ Reloaded: {len(self.ingredient_aliases)} aliases, {len(self.critical_ingredients)} categories, {len(self.ingredient_substitutions)} substitutions")
+    
     def _has_cached_embeddings(self) -> bool:
         """Check if cached embeddings exist and are valid"""
         required_files = [
-            self.embeddings_file,
             self.faiss_index_file,
             self.metadata_file,
             self.texts_file,
@@ -451,7 +678,7 @@ class RAGService:
             print(f"✅ Loaded {len(self.recipe_metadata)} recipes from cache")
             
         except Exception as e:
-            print(f"❌ Error loading cached embeddings: {e}")
+            print(f" Error loading cached embeddings: {e}")
             # Fall back to generating new embeddings
             await self._load_recipes()
             await self._create_faiss_index()
@@ -482,8 +709,8 @@ class RAGService:
             with open(self.config_file, 'w') as f:
                 json.dump(config, f, indent=2)
             
-            print(f"✅ Saved embeddings and index to {self.data_dir}")
+            print(f" Saved embeddings and index to {self.data_dir}")
             
         except Exception as e:
-            print(f"❌ Error saving embeddings: {e}")
+            print(f" Error saving embeddings: {e}")
             raise
