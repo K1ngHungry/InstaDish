@@ -23,7 +23,7 @@ A modern, AI-powered recipe discovery platform built with FastAPI and React, fea
 - **APIs**: FatSecret API (OAuth 2.0) for nutritional data
 - **Data**: 1,339 real recipes from CSV database with persistent embeddings
 - **Environment**: Conda for Python dependency management
-- **Process Management**: Intelligent startup/cleanup scripts with health monitoring
+- **Process Management**: Manual startup with configurable environment variables
 
 ## 🚀 Quick Start
 
@@ -34,24 +34,36 @@ A modern, AI-powered recipe discovery platform built with FastAPI and React, fea
 - Conda/Miniconda
 - Ollama (for AI chatbot)
 
-### One-Command Setup
+### Manual Setup
 
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd InstaDish
 
-# Start everything with one command
-./start_app.sh
+# 1. Set up environment variables
+cp .env.example .env
+# Edit .env file with your configuration
+
+# 2. Activate conda environment
+conda activate instadish
+
+# 3. Start Ollama (in another terminal)
+ollama serve
+
+# 4. Start backend (in another terminal)
+cd backend
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+# 5. Start frontend (in another terminal)
+cd frontend
+npm start
 ```
 
-This will:
--  Activate the conda environment automatically
--  Start Ollama in CPU-only mode (for stability)
--  Start the FastAPI backend with health monitoring
--  Start the React frontend
--  Monitor all services and restart if needed
--  Handle cleanup on Ctrl+C
+The application will be available at:
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs
 
 ### Environment Setup
 
@@ -136,8 +148,8 @@ export PORT=8000
 export RELOAD=false
 export CORS_ORIGINS=https://yourdomain.com
 
-# Start the application
-./start_app.sh
+# Start the application manually
+# See Manual Setup section above
 ```
 
 ## 🌐 Environment Variables
@@ -215,8 +227,8 @@ InstaDish/
 │   │   └── utils/          # Utility functions
 │   └── package.json
 ├── recipes_small.csv       # Recipe database (1,339 recipes)
-├── start_app.sh           # Main application startup script
-├── cleanup.sh             # Process cleanup script
+├── .env.example           # Environment configuration template
+├── .env                   # Local environment configuration (create from example)
 ├── STARTUP_GUIDE.md       # Detailed startup instructions
 └── README.md
 ```
@@ -368,12 +380,24 @@ See `backend/FATSECRET_SETUP.md` for detailed setup instructions.
 
 ### Starting the Application
 ```bash
-./start_app.sh
+# Follow the Manual Setup steps above
+# Each service runs in its own terminal
 ```
 
 ### Stopping the Application
-- Press `Ctrl+C` in the terminal where you ran the startup script
-- Or run `./cleanup.sh` to force stop all processes
+- Press `Ctrl+C` in each terminal where services are running
+- Or use `lsof -ti :PORT | xargs kill -9` to force kill processes on specific ports
+
+### Force Kill All Services
+```bash
+# Kill all processes on InstaDish ports
+for port in 8000 3000 11434; do lsof -ti :$port | xargs kill -9 2>/dev/null || true; done
+
+# Or kill specific services
+lsof -ti :8000 | xargs kill -9  # Backend
+lsof -ti :3000 | xargs kill -9  # Frontend  
+lsof -ti :11434 | xargs kill -9 # Ollama
+```
 
 ### Manual Process Management
 ```bash
