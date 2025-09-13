@@ -1,0 +1,90 @@
+import { useState, useCallback } from 'react';
+
+interface Recipe {
+  id: number;
+  name: string;
+  ingredients: string[];
+  instructions: string[];
+  category: string;
+  prep_time: string;
+  cook_time: string;
+  difficulty: string;
+  match: {
+    matches: number;
+    total: number;
+    percentage: number;
+    missing: string[];
+    hasAllIngredients: boolean;
+  };
+  sustainability?: {
+    score: number;
+    level: string;
+    carbon_footprint: number;
+    water_usage: number;
+    breakdown: Array<{
+      ingredient: string;
+      level: string;
+      score: number;
+      carbon: number;
+      water: number;
+    }>;
+  };
+}
+
+export const useRecipes = () => {
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const searchRecipes = useCallback(async (ingredients: string[]) => {
+    if (ingredients.length === 0) {
+      setRecipes([]);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('http://localhost:8000/api/recipes/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ingredients,
+          limit: 10
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setRecipes(data.data);
+        } else {
+          setError(data.message || 'Failed to search recipes');
+        }
+      } else {
+        setError('Failed to search recipes');
+      }
+    } catch (err) {
+      console.error('Error searching recipes:', err);
+      setError('Sorry, there was an error searching for recipes.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const clearRecipes = useCallback(() => {
+    setRecipes([]);
+    setError(null);
+  }, []);
+
+  return {
+    recipes,
+    loading,
+    error,
+    searchRecipes,
+    clearRecipes
+  };
+};
