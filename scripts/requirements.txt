@@ -1,5 +1,0 @@
-# InstaDish RAG Dependencies
-sentence-transformers
-faiss-cpu
-numpy
-pandas
