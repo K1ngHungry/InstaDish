@@ -53,9 +53,9 @@ class OllamaService:
     
     def _build_system_prompt(self, user_ingredients: List[str], relevant_recipes: List[Dict[str, Any]], selected_recipe: Dict[str, Any] = None) -> str:
         """Build system prompt with recipe context"""
-        prompt = """You are InstaDish, a friendly cooking assistant. Help users with recipes and cooking advice. \n
-        Don't be too chatty, just give the best recipe and advice.\n
-        When answer questions, only answer the question being asked.
+        prompt = """You are InstaDish, a professional culinary assistant. 
+                    Provide precise, accurate cooking advice and recipe recommendations.
+                    Be concise and informative in your responses.
 Current context:"""
         
         if user_ingredients:
@@ -82,7 +82,7 @@ Current context:"""
                     match = recipe['match']
                     prompt += f" ({match['percentage']}% match)"
         
-        prompt += "\n\nBe helpful and suggest recipes from the context! 🍳"
+        prompt += "\n\nBe helpful and respond to the question asked. Don't be too chatty. IMPORTANT: Always use line breaks (\\n) to separate different points, steps, or items. Never write everything in one long paragraph. Use proper formatting with line breaks for better readability."
         
         return prompt
     
