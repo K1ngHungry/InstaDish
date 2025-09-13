@@ -15,8 +15,16 @@ function App() {
   const [selectedRecipe, setSelectedRecipe] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
 
-  const handleSearch = async () => {
-    await searchRecipes(selectedIngredients);
+  const handleSearch = async (sortBy: string = 'match', sortOrder: string = 'desc') => {
+    await searchRecipes(selectedIngredients, sortBy, sortOrder);
+  };
+
+  const handleSearchClick = async () => {
+    await handleSearch();
+  };
+
+  const handleSortChange = async (sortBy: string, sortOrder: string) => {
+    await searchRecipes(selectedIngredients, sortBy, sortOrder);
   };
 
   const handleRecipeClick = async (recipeId: number) => {
@@ -61,7 +69,7 @@ function App() {
           <div className="search-section">
             <button 
               className="search-button"
-              onClick={handleSearch}
+              onClick={handleSearchClick}
               disabled={loading || selectedIngredients.length === 0}
             >
               {loading ? 'Searching...' : 'Find Recipes'}
@@ -75,6 +83,7 @@ function App() {
             loading={loading}
             error={error}
             onRecipeClick={handleRecipeClick}
+            onSortChange={handleSortChange}
           />
         </section>
 

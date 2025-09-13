@@ -35,6 +35,25 @@ interface Recipe {
       water: number;
     }>;
   };
+  health?: {
+    score: number;
+    level: string;
+    breakdown: {
+      nutritional_density: number;
+      macro_balance: number;
+      health_risk: number;
+    };
+    nutritional_info?: {
+      calories: number;
+      protein: number;
+      carbs: number;
+      fat: number;
+      fiber: number;
+      sugar: number;
+      sodium: number;
+    };
+    fallback: boolean;
+  };
 }
 
 export const useRecipes = () => {
@@ -42,7 +61,11 @@ export const useRecipes = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const searchRecipes = useCallback(async (ingredients: string[]) => {
+  const searchRecipes = useCallback(async (
+    ingredients: string[], 
+    sortBy: string = 'match', 
+    sortOrder: string = 'desc'
+  ) => {
     if (ingredients.length === 0) {
       setRecipes([]);
       return;
@@ -59,7 +82,9 @@ export const useRecipes = () => {
         },
         body: JSON.stringify({
           ingredients,
-          limit: 10
+          limit: 10,
+          sort_by: sortBy,
+          sort_order: sortOrder
         })
       });
 

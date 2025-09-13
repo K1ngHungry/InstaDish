@@ -33,6 +33,14 @@ class RAGService:
         self.ingredient_aliases = self._load_ingredient_data("ingredient_aliases.json")
         self.critical_ingredients = self._load_ingredient_data("critical_ingredients.json")
         self.ingredient_substitutions = self._load_ingredient_data("ingredient_substitutions.json")
+        
+        # Pattern-based criticality analysis
+        self.ingredient_patterns = {}  # Cache for learned patterns
+        self.recipe_groups = {}  # Cache for similar recipe groups
+        
+        # Health service for FatSecret API integration
+        from .health_service import HealthService
+        self.health_service = HealthService()
     
     def _load_ingredient_data(self, filename: str) -> dict:
         """Load ingredient data from JSON file"""
@@ -65,16 +73,19 @@ class RAGService:
             # Load recipes from CSV
             print("Loading recipes from CSV...")
             await self._load_recipes()
-            
+
             # Generate embeddings and create FAISS index
             print("Generating embeddings and creating FAISS index...")
             await self._create_faiss_index()
-            
+
             # Save embeddings to disk
             print("Saving embeddings to disk...")
             await self._save_embeddings()
-            
+
             print(f"RAG service ready with {len(self.recipe_metadata)} recipes (new)")
+        
+        # Pre-load pattern analysis for better performance
+        await self.preload_pattern_analysis()
         
     async def _load_recipes(self):
         """Load recipes from CSV file"""
@@ -175,10 +186,11 @@ class RAGService:
         query_embedding = query_embedding.astype('float32')
         faiss.normalize_L2(query_embedding)
         
-        # Search FAISS index
-        scores, indices = self.index.search(query_embedding, min(limit * 2, len(self.recipe_metadata)))
+        # Search FAISS index with more candidates for better pattern analysis
+        search_limit = min(limit * 4, len(self.recipe_metadata))  # Get more candidates
+        scores, indices = self.index.search(query_embedding, search_limit)
         
-        # Get results and calculate ingredient matches
+        # Get results and calculate enhanced ingredient matches
         results = []
         for score, idx in zip(scores[0], indices[0]):
             if idx == -1:  # Invalid index
@@ -186,13 +198,17 @@ class RAGService:
                 
             recipe = self.recipe_metadata[idx].copy()
             
-            # Calculate ingredient match
-            match_info = self._calculate_ingredient_match(recipe, user_ingredients or [])
+            # Use enhanced ingredient matching with pattern analysis
+            match_info = self._calculate_enhanced_ingredient_match(recipe, user_ingredients or [])
             recipe['match'] = match_info
             
             # Calculate recipe sustainability
             sustainability_info = self._calculate_recipe_sustainability(recipe)
             recipe['sustainability'] = sustainability_info
+            
+            # Calculate health score for displayed recipes only
+            health_info = await self.health_service.calculate_recipe_health_score(recipe)
+            recipe['health'] = health_info
             
             results.append(recipe)
             
@@ -635,6 +651,206 @@ class RAGService:
         self.critical_ingredients = self._load_ingredient_data("critical_ingredients.json")
         self.ingredient_substitutions = self._load_ingredient_data("ingredient_substitutions.json")
         print(f"✅ Reloaded: {len(self.ingredient_aliases)} aliases, {len(self.critical_ingredients)} categories, {len(self.ingredient_substitutions)} substitutions")
+    
+    def _find_similar_recipes_by_name(self, recipe_name: str, limit: int = 20) -> List[Dict[str, Any]]:
+        """Find similar recipes by analyzing recipe names and ingredients"""
+        if not self.recipe_metadata:
+            return []
+        
+        recipe_name_lower = recipe_name.lower()
+        similar_recipes = []
+        
+        # Extract key words from recipe name
+        name_words = set(recipe_name_lower.split())
+        
+        for recipe in self.recipe_metadata:
+            other_name = recipe.get('name', '').lower()
+            other_words = set(other_name.split())
+            
+            # Calculate similarity based on common words
+            common_words = name_words.intersection(other_words)
+            if len(common_words) > 0:
+                similarity_score = len(common_words) / max(len(name_words), len(other_words))
+                if similarity_score > 0.3:  # 30% word overlap threshold
+                    similar_recipes.append((recipe, similarity_score))
+        
+        # Sort by similarity and return top matches
+        similar_recipes.sort(key=lambda x: x[1], reverse=True)
+        return [recipe for recipe, score in similar_recipes[:limit]]
+    
+    def _analyze_ingredient_criticality(self, recipe_name: str, similar_recipes: List[Dict[str, Any]]) -> Dict[str, str]:
+        """Analyze ingredient criticality based on frequency in similar recipes"""
+        if not similar_recipes:
+            return {}
+        
+        # Count ingredient frequencies
+        ingredient_counts = {}
+        total_recipes = len(similar_recipes)
+        
+        for recipe in similar_recipes:
+            ingredients = recipe.get('ingredient_tags', [])
+            for ingredient_string in ingredients:
+                # Handle the split JSON format - each string is part of a JSON array
+                # Remove quotes and brackets, then normalize
+                cleaned_ingredient = ingredient_string.strip('[]"')
+                if cleaned_ingredient:
+                    normalized = self._normalize_ingredient(cleaned_ingredient)
+                    if normalized:
+                        ingredient_counts[normalized] = ingredient_counts.get(normalized, 0) + 1
+        
+        # Calculate criticality scores based on frequency
+        criticality_scores = {}
+        for ingredient, count in ingredient_counts.items():
+            frequency = count / total_recipes
+            
+            if frequency >= 0.8:  # 80%+ = critical
+                criticality_scores[ingredient] = 'critical'
+            elif frequency >= 0.5:  # 50%+ = important
+                criticality_scores[ingredient] = 'important'
+            elif frequency >= 0.2:  # 20%+ = optional
+                criticality_scores[ingredient] = 'optional'
+            else:  # <20% = rare
+                criticality_scores[ingredient] = 'rare'
+        
+        return criticality_scores
+    
+    def _get_pattern_based_criticality(self, recipe_name: str, ingredient: str) -> str:
+        """Get criticality for a specific ingredient using pattern analysis"""
+        # Check cache first
+        cache_key = f"{recipe_name}_{ingredient}"
+        if cache_key in self.ingredient_patterns:
+            return self.ingredient_patterns[cache_key]
+        
+        # Find similar recipes
+        similar_recipes = self._find_similar_recipes_by_name(recipe_name, limit=20)
+        
+        if not similar_recipes:
+            return 'optional'  # Default if no similar recipes found
+        
+        # Analyze ingredient criticality
+        criticality_scores = self._analyze_ingredient_criticality(recipe_name, similar_recipes)
+        
+        # Normalize the ingredient for lookup
+        normalized_ingredient = self._normalize_ingredient(ingredient)
+        criticality = criticality_scores.get(normalized_ingredient, 'optional')
+        
+        # Cache the result
+        self.ingredient_patterns[cache_key] = criticality
+        
+        return criticality
+    
+    async def preload_pattern_analysis(self):
+        """Pre-load pattern analysis for common recipes to improve performance"""
+        print("Pre-loading pattern analysis...")
+        
+        # Get unique recipe names
+        recipe_names = set(recipe.get('name', '') for recipe in self.recipe_metadata)
+        
+        # Pre-analyze patterns for each unique recipe name
+        for recipe_name in list(recipe_names)[:100]:  # Limit to first 100 for performance
+            if recipe_name:
+                similar_recipes = self._find_similar_recipes_by_name(recipe_name, limit=20)
+                if similar_recipes:
+                    criticality_scores = self._analyze_ingredient_criticality(recipe_name, similar_recipes)
+                    # Cache all ingredient criticalities for this recipe
+                    for ingredient, criticality in criticality_scores.items():
+                        cache_key = f"{recipe_name}_{ingredient}"
+                        self.ingredient_patterns[cache_key] = criticality
+        
+        print(f"✅ Pre-loaded patterns for {len(self.ingredient_patterns)} ingredient-recipe combinations")
+    
+    def _calculate_enhanced_ingredient_match(self, recipe: Dict[str, Any], user_ingredients: List[str]) -> Dict[str, Any]:
+        """Enhanced ingredient matching using pattern-based criticality"""
+        if not user_ingredients or not recipe.get('ingredient_tags'):
+            return {
+                "matches": 0,
+                "total": len(recipe.get('ingredient_tags', [])),
+                "percentage": 0,
+                "weighted_percentage": 0,
+                "missing": recipe.get('ingredient_tags', []),
+                "critical_missing": recipe.get('ingredient_tags', []),
+                "important_missing": [],
+                "replaceable_missing": [],
+                "substitution_suggestions": {},
+                "hasAllIngredients": False,
+                "hasAllCriticalIngredients": False
+            }
+        
+        # Normalize ingredients
+        user_ingredients_normalized = [self._normalize_ingredient(ing) for ing in user_ingredients]
+        recipe_tags_normalized = [self._normalize_ingredient(tag) for tag in recipe['ingredient_tags']]
+        
+        # Categorize missing ingredients by pattern-based criticality
+        critical_missing = []
+        important_missing = []
+        optional_missing = []
+        rare_missing = []
+        
+        matches = 0
+        recipe_name = recipe.get('name', '')
+        
+        for i, recipe_ingredient in enumerate(recipe_tags_normalized):
+            original_ingredient = recipe['ingredient_tags'][i]
+            
+            if self._ingredients_match(recipe_ingredient, user_ingredients_normalized):
+                matches += 1
+            else:
+                # Get pattern-based criticality
+                criticality = self._get_pattern_based_criticality(recipe_name, original_ingredient)
+                
+                if criticality == 'critical':
+                    critical_missing.append(original_ingredient)
+                elif criticality == 'important':
+                    important_missing.append(original_ingredient)
+                elif criticality == 'optional':
+                    optional_missing.append(original_ingredient)
+                else:  # rare
+                    rare_missing.append(original_ingredient)
+        
+        # Combine missing ingredients
+        missing = critical_missing + important_missing + optional_missing + rare_missing
+        
+        # Calculate scores
+        total = len(recipe_tags_normalized)
+        percentage = (matches / total * 100) if total > 0 else 0
+        
+        # Enhanced weighted scoring (critical=4, important=3, optional=2, rare=1)
+        critical_matches = total - len(critical_missing)
+        important_matches = total - len(important_missing) - len(critical_missing)
+        optional_matches = total - len(optional_missing) - len(important_missing) - len(critical_missing)
+        rare_matches = total - len(missing)
+        
+        if total > 0:
+            max_weighted_score = (len(critical_missing) + critical_matches) * 4 + \
+                               (len(important_missing) + important_matches) * 3 + \
+                               (len(optional_missing) + optional_matches) * 2 + \
+                               (len(rare_missing) + rare_matches) * 1
+            
+            actual_weighted_score = critical_matches * 4 + important_matches * 3 + optional_matches * 2 + rare_matches * 1
+            weighted_score = (actual_weighted_score / max_weighted_score) * 100 if max_weighted_score > 0 else 0
+        else:
+            weighted_score = 0
+        
+        # Generate substitution suggestions
+        substitution_suggestions = {}
+        for ingredient in missing[:5]:
+            subs = self._get_ingredient_substitution_suggestions(ingredient, recipe.get('category', ''))
+            if subs:
+                substitution_suggestions[ingredient] = subs
+        
+        return {
+            "matches": matches,
+            "total": total,
+            "percentage": round(percentage, 1),
+            "weighted_percentage": round(weighted_score, 1),
+            "missing": missing,
+            "critical_missing": critical_missing,
+            "important_missing": important_missing,
+            "replaceable_missing": optional_missing + rare_missing,
+            "substitution_suggestions": substitution_suggestions,
+            "hasAllIngredients": matches == total,
+            "hasAllCriticalIngredients": len(critical_missing) == 0
+        }
     
     def _has_cached_embeddings(self) -> bool:
         """Check if cached embeddings exist and are valid"""

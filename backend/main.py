@@ -13,6 +13,29 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from services.rag_service import RAGService
 from services.ollama_service import OllamaService
 from services.sustainability_service import SustainabilityService
+from services.health_service import HealthService
+
+def _sort_recipes(recipes: List[Dict[str, Any]], sort_by: str, sort_order: str) -> List[Dict[str, Any]]:
+    """Sort recipes based on the specified criteria"""
+    if not recipes:
+        return recipes
+    
+    # Define sorting key functions
+    def get_sort_key(recipe):
+        if sort_by == "match":
+            return recipe.get('match', {}).get('weighted_percentage', 0)
+        elif sort_by == "sustainability":
+            return recipe.get('sustainability', {}).get('score', 0)
+        elif sort_by == "health":
+            return recipe.get('health', {}).get('score', 0)
+        else:  # default to match
+            return recipe.get('match', {}).get('weighted_percentage', 0)
+    
+    # Sort recipes
+    reverse = sort_order.lower() == "desc"
+    sorted_recipes = sorted(recipes, key=get_sort_key, reverse=reverse)
+    
+    return sorted_recipes
 
 app = FastAPI(
     title="InstaDish API",
@@ -33,11 +56,14 @@ app.add_middleware(
 rag_service = None
 ollama_service = None
 sustainability_service = None
+health_service = None
 
 # Pydantic models
 class RecipeSearchRequest(BaseModel):
     query: Optional[str] = None
     ingredients: Optional[List[str]] = None
+    sort_by: Optional[str] = "match"  # match, sustainability, health
+    sort_order: Optional[str] = "desc"  # asc, desc
     limit: int = 10
 
 class ChatRequest(BaseModel):
@@ -74,7 +100,7 @@ class SustainabilityResponse(BaseModel):
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
-    global rag_service, ollama_service, sustainability_service
+    global rag_service, ollama_service, sustainability_service, health_service
     
     print("🚀 Starting InstaDish Backend...")
     
@@ -94,6 +120,11 @@ async def startup_event():
         print("Initializing Sustainability service...")
         sustainability_service = SustainabilityService()
         print("Sustainability service initialized successfully")
+        
+        # Initialize Health service
+        print("Initializing Health service...")
+        health_service = HealthService()
+        print("Health service initialized successfully")
         
         print("InstaDish Backend ready!")
         
@@ -181,14 +212,19 @@ async def search_recipes(request: RecipeSearchRequest):
             user_ingredients=request.ingredients or []
         )
         
+        # Sort results based on user preference
+        sorted_recipes = _sort_recipes(recipes, request.sort_by, request.sort_order)
+        
         return {
             "success": True,
-            "data": recipes,
-            "count": len(recipes),
+            "data": sorted_recipes,
+            "count": len(sorted_recipes),
             "searchCriteria": {
                 "query": search_query,
                 "ingredients": request.ingredients or [],
-                "totalMatches": len(recipes)
+                "sortBy": request.sort_by,
+                "sortOrder": request.sort_order,
+                "totalMatches": len(sorted_recipes)
             }
         }
     except Exception as e:

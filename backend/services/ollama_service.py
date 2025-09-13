@@ -47,8 +47,9 @@ class OllamaService:
     
     def _build_system_prompt(self, user_ingredients: List[str], relevant_recipes: List[Dict[str, Any]], selected_recipe: Dict[str, Any] = None) -> str:
         """Build system prompt with recipe context"""
-        prompt = """You are InstaDish, a friendly cooking assistant. Help users with recipes and cooking advice. Don't be too chatty, just give the best recipe and advice.
-
+        prompt = """You are InstaDish, a friendly cooking assistant. Help users with recipes and cooking advice. \n
+        Don't be too chatty, just give the best recipe and advice.\n
+        When answer questions, only answer the question being asked.
 Current context:"""
         
         if user_ingredients:

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import RecipeSorting from './common/RecipeSorting';
 
 interface Recipe {
   id: number;
@@ -35,6 +36,25 @@ interface Recipe {
       water: number;
     }>;
   };
+  health?: {
+    score: number;
+    level: string;
+    breakdown: {
+      nutritional_density: number;
+      macro_balance: number;
+      health_risk: number;
+    };
+    nutritional_info?: {
+      calories: number;
+      protein: number;
+      carbs: number;
+      fat: number;
+      fiber: number;
+      sugar: number;
+      sodium: number;
+    };
+    fallback: boolean;
+  };
 }
 
 interface RecipeResultsProps {
@@ -42,14 +62,26 @@ interface RecipeResultsProps {
   loading: boolean;
   error: string | null;
   onRecipeClick: (recipeId: number) => void;
+  onSortChange?: (sortBy: string, sortOrder: string) => void;
 }
 
 const RecipeResults: React.FC<RecipeResultsProps> = ({
   recipes,
   loading,
   error,
-  onRecipeClick
+  onRecipeClick,
+  onSortChange
 }) => {
+  const [sortBy, setSortBy] = useState('match');
+  const [sortOrder, setSortOrder] = useState('desc');
+
+  const handleSortChange = (newSortBy: string, newSortOrder: string) => {
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    if (onSortChange) {
+      onSortChange(newSortBy, newSortOrder);
+    }
+  };
   if (loading) {
     return (
       <div className="recipe-results">
@@ -79,7 +111,16 @@ const RecipeResults: React.FC<RecipeResultsProps> = ({
 
   return (
     <div className="recipe-results">
-      <h2>Found {recipes.length} recipes</h2>
+      <div className="results-header">
+        <h2>Found {recipes.length} recipes</h2>
+        {onSortChange && (
+          <RecipeSorting
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSortChange={handleSortChange}
+          />
+        )}
+      </div>
       <div className="recipes-grid">
         {recipes.map((recipe) => (
           <div
@@ -123,6 +164,20 @@ const RecipeResults: React.FC<RecipeResultsProps> = ({
                   </span>
                   <span className="sustainability-details">
                     {recipe.sustainability.carbon_footprint}kg CO₂
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {recipe.health && (
+              <div className="recipe-health">
+                <div className="health-score">
+                  <span className={`health-level ${recipe.health.level}`}>
+                    🏥 {recipe.health.level.replace('_', ' ').toUpperCase()}
+                  </span>
+                  <span className="health-details">
+                    {recipe.health.score}/100
+                    {recipe.health.fallback && <span className="fallback-indicator"> (est.)</span>}
                   </span>
                 </div>
               </div>

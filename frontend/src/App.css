@@ -320,6 +320,162 @@ body {
   color: #666;
 }
 
+/* Health Score Styles */
+.recipe-health {
+  background: #f0f8ff;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.health-score {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.health-level {
+  font-weight: bold;
+  font-size: 0.9rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  text-transform: uppercase;
+}
+
+.health-level.excellent {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+
+.health-level.very_good {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.health-level.good {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.health-level.fair {
+  background: #fce4ec;
+  color: #c2185b;
+}
+
+.health-level.poor {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+.health-level.very_poor {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.health-details {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.fallback-indicator {
+  font-style: italic;
+  color: #999;
+}
+
+/* Recipe Sorting Styles */
+.recipe-sorting {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.sorting-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sort-by-section,
+.sort-order-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sort-by-section label,
+.sort-order-section label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.sort-select {
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  background: white;
+  font-size: 0.875rem;
+  min-width: 150px;
+}
+
+.sort-select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.sorting-info {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.current-sort {
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.results-header h2 {
+  margin: 0;
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  .results-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .sorting-controls {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .sort-by-section,
+  .sort-order-section {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .sort-select {
+    min-width: auto;
+    flex: 1;
+  }
+}
+
 /* Modal Sustainability Styles */
 .recipe-sustainability-modal {
   background: #f8f9fa;
