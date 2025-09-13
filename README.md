@@ -11,17 +11,19 @@ A modern, AI-powered recipe discovery platform built with FastAPI and React, fea
 - **📊 Advanced Recipe Matching**: See how well your ingredients match recipe requirements with critical/important/replaceable ingredient classification
 - **🎯 Smart Sorting**: Sort recipes by ingredient match, sustainability, or health scores
 - **📌 Recipe Selection**: Select a recipe to get focused AI advice and relevant quick questions
-- **💾 Persistent Embeddings**: Fast startup with cached vector embeddings
+- **💾 Persistent Embeddings**: Fast startup with cached vector embeddings (1,339 recipes)
 - **📱 Responsive Design**: Beautiful, mobile-friendly interface
+- **🔄 Auto-Recovery**: Robust startup script with process monitoring and auto-restart
 
 ## 🏗️ Architecture
 
-- **Backend**: FastAPI with Python 3.9+
-- **Frontend**: React with TypeScript
-- **AI/ML**: FAISS, sentence-transformers, Ollama
-- **Health API**: FatSecret API integration for nutritional data
-- **Data**: 1,339 real recipes from CSV database
+- **Backend**: FastAPI with Python 3.9+ (async/await patterns)
+- **Frontend**: React with TypeScript, modern hooks-based architecture
+- **AI/ML**: FAISS vector database, sentence-transformers, Ollama (LLaMA 2:7b)
+- **APIs**: FatSecret API (OAuth 2.0) for nutritional data
+- **Data**: 1,339 real recipes from CSV database with persistent embeddings
 - **Environment**: Conda for Python dependency management
+- **Process Management**: Intelligent startup/cleanup scripts with health monitoring
 
 ## 🚀 Quick Start
 
@@ -32,38 +34,7 @@ A modern, AI-powered recipe discovery platform built with FastAPI and React, fea
 - Conda/Miniconda
 - Ollama (for AI chatbot)
 
-### Environment Setup
-
-1. **Copy environment files:**
-   ```bash
-   cp backend/env.example backend/.env
-   cp frontend/env.example frontend/.env
-   ```
-
-2. **Configure your environment variables:**
-   - Edit `backend/.env` with your FatSecret API credentials
-   - Edit `frontend/.env` with your backend URL
-
-### What's Included vs. What You Need to Install
-
-**✅ Included in Repository:**
-- Source code for both frontend and backend
-- Recipe database (`recipes_small.csv`)
-- Pre-generated embeddings and data files
-- Configuration files and scripts
-
-**📦 You Need to Install:**
-- Node.js dependencies (`npm install` in frontend/)
-- Python dependencies (`pip install -r requirements.txt` in backend/)
-- Ollama and the AI model
-- Conda environment setup
-
-**🚫 Not Included (Correctly):**
-- `node_modules/` (installed via `npm install`)
-- `build/` directories (generated during build)
-- `.env` files (you create these)
-
-### 1. One-Command Setup
+### One-Command Setup
 
 ```bash
 # Clone the repository
@@ -75,16 +46,52 @@ cd InstaDish
 ```
 
 This will:
-- Activate the conda environment
-- Install Python dependencies (if needed)
-- Start Ollama (if not running)
-- Start the FastAPI backend
-- Install Node.js dependencies (if needed)
-- Start the React frontend
+- ✅ Activate the conda environment automatically
+- ✅ Start Ollama in CPU-only mode (for stability)
+- ✅ Start the FastAPI backend with health monitoring
+- ✅ Start the React frontend
+- ✅ Monitor all services and restart if needed
+- ✅ Handle cleanup on Ctrl+C
 
-### 2. Manual Setup (Alternative)
+### Environment Setup
 
-#### Backend Setup
+1. **Create environment files:**
+   ```bash
+   # Backend environment
+   cp backend/env.example backend/.env
+   
+   # Frontend environment  
+   cp frontend/env.example frontend/.env
+   ```
+
+2. **Configure your environment variables:**
+   - Edit `backend/.env` with your FatSecret API credentials (optional)
+   - Edit `frontend/.env` with your backend URL
+
+### What's Included vs. What You Need to Install
+
+**✅ Included in Repository:**
+- Source code for both frontend and backend
+- Recipe database (`recipes_small.csv`)
+- Pre-generated embeddings and FAISS index
+- Configuration files and startup scripts
+- Cleanup and process management scripts
+
+**📦 You Need to Install:**
+- Node.js dependencies (`npm install` in frontend/)
+- Python dependencies (via conda environment)
+- Ollama and the AI model
+- Conda environment setup
+
+**🚫 Not Included (Correctly):**
+- `node_modules/` (installed via `npm install`)
+- `build/` directories (generated during build)
+- `.env` files (you create these)
+- Cached data files (generated on first run)
+
+## 🛠️ Manual Setup (Alternative)
+
+### Backend Setup
 ```bash
 # Activate conda environment
 conda activate instadish
@@ -94,22 +101,43 @@ cd backend
 pip install -r requirements.txt
 
 # Start the backend
-python main.py
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+### Frontend Setup
+```bash
+# Install Node.js dependencies
+cd frontend
+npm install
+
+# Start the frontend
+npm start
+```
+
+### AI Chatbot Setup
+```bash
+# Install Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Pull the model
+ollama pull llama2:7b
+
+# Start Ollama service (CPU-only mode for stability)
+OLLAMA_GPU_LAYERS=0 ollama serve
 ```
 
 ## 🚀 Production Deployment
 
 ### Production Startup
 ```bash
-# Use production startup script
-./start_production.sh
-
-# Or manually:
+# Set production environment variables
 export HOST=0.0.0.0
 export PORT=8000
 export RELOAD=false
 export CORS_ORIGINS=https://yourdomain.com
-cd backend && python main.py
+
+# Start the application
+./start_app.sh
 ```
 
 ## 🌐 Environment Variables
@@ -129,7 +157,7 @@ CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
 OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=llama2:7b
 
-# FatSecret API
+# FatSecret API (Optional - for health scores)
 FATSECRET_CLIENT_ID=your_client_id
 FATSECRET_CLIENT_SECRET=your_client_secret
 ```
@@ -141,44 +169,25 @@ REACT_APP_API_URL=http://localhost:8000/api
 # For production: https://your-backend-domain.com/api
 ```
 
-#### Frontend Setup
-```bash
-# Install Node.js dependencies
-cd frontend
-npm install
-
-# Start the frontend
-npm start
-```
-
-#### AI Chatbot Setup
-```bash
-# Install Ollama
-curl -fsSL https://ollama.ai/install.sh | sh
-
-# Pull the model
-ollama pull llama2:7b
-
-# Start Ollama service
-ollama serve
-```
-
 ## 📁 Project Structure
 
 ```
 InstaDish/
 ├── backend/                 # FastAPI backend
-│   ├── main.py             # Main application
-│   ├── services/           # Business logic
+│   ├── main.py             # Main application entry point
+│   ├── services/           # Business logic services
 │   │   ├── rag_service.py  # FAISS + embeddings + pattern analysis
-│   │   ├── ollama_service.py # AI chatbot
-│   │   ├── sustainability_service.py # Environmental analysis
+│   │   ├── ollama_service.py # AI chatbot integration
+│   │   ├── sustainability_service.py # Environmental impact analysis
 │   │   └── health_service.py # FatSecret API integration
-│   ├── data/               # Persistent data
-│   │   ├── faiss_index.faiss # Vector embeddings
-│   │   ├── recipe_metadata.json # Recipe information
-│   │   ├── ingredient_aliases.json # Ingredient matching
-│   │   ├── critical_ingredients.json # Ingredient importance
+│   ├── data/               # Persistent data and cache
+│   │   ├── faiss_index.faiss # Vector embeddings index
+│   │   ├── recipe_metadata.json # Recipe information cache
+│   │   ├── recipe_texts.json # Recipe text cache
+│   │   ├── embeddings.npy # Vector embeddings cache
+│   │   ├── index_config.json # FAISS configuration
+│   │   ├── ingredient_aliases.json # Ingredient matching rules
+│   │   ├── critical_ingredients.json # Ingredient importance data
 │   │   └── ingredient_substitutions.json # Substitution suggestions
 │   ├── .env                # Environment variables
 │   ├── requirements.txt    # Python dependencies
@@ -187,20 +196,28 @@ InstaDish/
 │   ├── src/
 │   │   ├── components/     # UI components
 │   │   │   ├── common/     # Shared components
-│   │   │   │   └── RecipeSorting.tsx # Sorting controls
-│   │   │   ├── Chatbot.tsx # AI chat interface
-│   │   │   ├── RecipeModal.tsx # Recipe details
-│   │   │   ├── RecipeResults.tsx # Search results
-│   │   │   └── SustainabilityDashboard.tsx # Environmental analysis
-│   │   ├── hooks/         # Custom React hooks
-│   │   │   ├── useRecipes.ts # Recipe management
-│   │   │   └── useIngredients.ts # Ingredient management
-│   │   └── services/      # API service layer
-│   │       └── api.js     # API client
+│   │   │   │   ├── Header.js # Navigation header
+│   │   │   │   └── IngredientInput.js # Ingredient input component
+│   │   │   ├── chatbot/    # AI chatbot components
+│   │   │   │   └── Chatbot.js # Main chatbot interface
+│   │   │   ├── recipe/     # Recipe-related components
+│   │   │   │   ├── RecipeModal.js # Recipe details modal
+│   │   │   │   └── RecipeResults.js # Search results display
+│   │   │   └── sustainability/ # Environmental analysis
+│   │   │       └── SustainabilityDashboard.js # Sustainability metrics
+│   │   ├── hooks/          # Custom React hooks
+│   │   │   ├── useRecipes.js # Recipe management
+│   │   │   ├── useIngredients.js # Ingredient management
+│   │   │   ├── useChatbot.js # Chatbot functionality
+│   │   │   └── useSustainability.js # Sustainability analysis
+│   │   ├── services/       # API service layer
+│   │   │   └── api.js      # API client
+│   │   └── utils/          # Utility functions
 │   └── package.json
-├── recipes_small.csv       # Recipe database
-├── start_app.sh           # Application startup script
-├── stop_app.sh            # Application shutdown script
+├── recipes_small.csv       # Recipe database (1,339 recipes)
+├── start_app.sh           # Main application startup script
+├── cleanup.sh             # Process cleanup script
+├── STARTUP_GUIDE.md       # Detailed startup instructions
 └── README.md
 ```
 
@@ -208,9 +225,9 @@ InstaDish/
 
 ### Recipes
 - `GET /api/recipes` - Get all recipes
-- `GET /api/recipes/{id}` - Get specific recipe
+- `GET /api/recipes/{id}` - Get specific recipe with full details
 - `POST /api/recipes/search` - Search recipes with sorting options
-- `GET /api/recipes/categories` - Get categories
+- `GET /api/recipes/categories` - Get available recipe categories
 
 ### Chatbot
 - `POST /api/chatbot` - Chat with AI (supports recipe context)
@@ -221,7 +238,7 @@ InstaDish/
 - `POST /api/sustainability/analyze` - Analyze ingredient sustainability
 
 ### Health
-- `GET /health` - Health check
+- `GET /health` - Health check endpoint
 
 ### Admin
 - `POST /api/admin/reload-ingredients` - Reload ingredient data
@@ -244,6 +261,7 @@ The app analyzes ingredients for:
   - **Health Risk Assessment**: Sodium, sugar, and saturated fat penalties
 - **Health Levels**: Excellent (90-100), Very Good (80-89), Good (70-79), Fair (60-69), Poor (50-59), Very Poor (<50)
 - **Fallback Scoring**: Heuristic-based scoring when API is unavailable
+- **Rate Limiting**: Smart API usage with fallback to estimated nutrition data
 
 ## 🎯 Advanced Recipe Matching
 
@@ -269,12 +287,14 @@ Each sorting option supports both ascending and descending order.
 - **Dynamic Quick Questions**: Questions adapt based on selected recipe
 - **Ingredient Matching**: Smart matching of available ingredients
 - **Cooking Advice**: Get tips and substitutions from the AI
+- **CPU-Only Mode**: Stable operation with Ollama running in CPU-only mode
 
 ## 🛠️ Development
 
 ### Backend Development
 ```bash
 cd backend
+conda activate instadish
 python -m uvicorn main:app --reload
 ```
 
@@ -301,20 +321,7 @@ npm start
 - **Pattern Caching**: Pre-computed ingredient criticality patterns
 - **Efficient API Usage**: Smart ingredient grouping for health scores
 - **Responsive UI**: Smooth user experience
-
-## 🔒 Environment Variables
-
-Create a `.env` file in the backend directory:
-
-```env
-# FatSecret API (Optional - for health scores)
-FATSECRET_CLIENT_ID=your_client_id_here
-FATSECRET_CLIENT_SECRET=your_client_secret_here
-
-# Ollama Configuration (Optional)
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama2:7b
-```
+- **Memory Optimization**: CPU-only Ollama mode for stability
 
 ## 🏥 Health API Setup
 
@@ -329,6 +336,11 @@ See `backend/FATSECRET_SETUP.md` for detailed setup instructions.
 
 ## 🐛 Troubleshooting
 
+### Startup Issues
+- **Port conflicts**: Run `./cleanup.sh` to stop existing processes
+- **Conda issues**: Ensure conda is properly initialized with `conda init`
+- **Memory issues**: The startup script includes memory optimization settings
+
 ### Backend Issues
 - Ensure conda environment is activated
 - Check that all dependencies are installed
@@ -341,14 +353,38 @@ See `backend/FATSECRET_SETUP.md` for detailed setup instructions.
 - Verify CORS settings
 
 ### AI Chatbot Issues
-- Ensure Ollama is running
+- Ensure Ollama is running (CPU-only mode for stability)
 - Check that llama2:7b model is installed
 - Verify Ollama service is accessible
+- If getting 500 errors, restart Ollama: `pkill -f ollama && OLLAMA_GPU_LAYERS=0 ollama serve`
 
 ### Health Scoring Issues
 - Check FatSecret API credentials
 - Verify IP address is whitelisted
 - System will fallback to heuristic scoring if API fails
+- Rate limiting is normal on free tier
+
+## 🚀 Process Management
+
+### Starting the Application
+```bash
+./start_app.sh
+```
+
+### Stopping the Application
+- Press `Ctrl+C` in the terminal where you ran the startup script
+- Or run `./cleanup.sh` to force stop all processes
+
+### Manual Process Management
+```bash
+# Check running processes
+ps aux | grep -E "(uvicorn|node|ollama)"
+
+# Stop specific services
+pkill -f "uvicorn main:app"
+pkill -f "react-scripts start"
+pkill -f "ollama serve"
+```
 
 ## 📝 License
 

@@ -184,9 +184,13 @@ class RAGService:
             
             # Parse ingredients with proper cleaning
             ingredients = self._clean_ingredient_list(row['Ingredients'])
+            if not isinstance(ingredients, list):
+                ingredients = []
             
             # Parse instructions with proper cleaning
             instructions = self._clean_instruction_list(row['Instructions'])
+            if not isinstance(instructions, list):
+                instructions = []
             
             # Create ingredient tags for matching
             ingredient_tags = []
