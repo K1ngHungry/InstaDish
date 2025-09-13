@@ -99,15 +99,30 @@ main() {
     stop_by_pid ".frontend.pid" "Frontend"
     stop_by_pid ".ollama.pid" "Ollama"
     
-    # Fallback: Stop by process names
+    # Fallback: Stop by process names (more aggressive)
     stop_by_name "uvicorn main:app" "Backend"
     stop_by_name "react-scripts start" "Frontend"
     stop_by_name "ollama serve" "Ollama"
+    
+    # Additional cleanup for common process patterns
+    stop_by_name "uvicorn" "Uvicorn processes"
+    stop_by_name "react-scripts" "React processes"
+    stop_by_name "node.*start.js" "Node start processes"
     
     # Fallback: Stop by ports
     stop_by_port "8000" "Backend"
     stop_by_port "3000" "Frontend"
     stop_by_port "11434" "Ollama"
+    
+    # Final cleanup: Kill any remaining processes on our ports
+    echo -e "${BLUE}🧹 Final cleanup of remaining processes...${NC}"
+    for port in 8000 3000 11434; do
+        local pids=$(lsof -ti :$port 2>/dev/null || true)
+        if [ -n "$pids" ]; then
+            echo -e "${YELLOW}⚠️  Killing remaining processes on port $port: $pids${NC}"
+            echo "$pids" | xargs kill -9 2>/dev/null || true
+        fi
+    done
     
     # Clean up log files
     echo -e "${BLUE}🧹 Cleaning up log files...${NC}"
