@@ -6,6 +6,10 @@ import uvicorn
 import os
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from root .env file
+load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
 
 # Add the current directory to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -43,10 +47,11 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# CORS middleware
+# CORS middleware - configurable via environment variables
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -113,8 +118,9 @@ async def startup_event():
         
         # Initialize Ollama service
         print("Initializing Ollama service...")
-        ollama_service = OllamaService()
-        print("Ollama service initialized successfully")
+        ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
+        ollama_service = OllamaService(base_url=ollama_url)
+        print(f"Ollama service initialized successfully (URL: {ollama_url})")
         
         # Initialize Sustainability service
         print("Initializing Sustainability service...")
@@ -369,10 +375,16 @@ async def reload_ingredient_data():
         raise HTTPException(status_code=500, detail=f"Failed to reload ingredient data: {str(e)}")
 
 if __name__ == "__main__":
+    # Get configuration from environment variables
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+    reload = os.getenv("RELOAD", "true").lower() == "true"
+    log_level = os.getenv("LOG_LEVEL", "info")
+    
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
+        host=host,
+        port=port,
+        reload=reload,
+        log_level=log_level
     )

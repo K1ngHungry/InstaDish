@@ -1,4 +1,5 @@
 import React from 'react';
+import { cleanIngredients, cleanInstructions } from '../utils/recipeUtils';
 
 interface Recipe {
   id: number;
@@ -45,6 +46,10 @@ interface RecipeModalProps {
 }
 
 const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose, onSelect }) => {
+  // Clean up ingredient and instruction data for display
+  const displayIngredients = cleanIngredients(recipe.ingredients || []);
+  const displayInstructions = cleanInstructions(recipe.instructions || []);
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -126,7 +131,7 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose, onSelect }) 
                   <div className="classification-items">
                     {recipe.match.critical_missing.map((ingredient, index) => (
                       <div key={index} className="classification-item">
-                        {ingredient}
+                        {ingredient.replace(/^\[?"|"\]?$/g, '').trim()}
                       </div>
                     ))}
                   </div>
@@ -141,7 +146,7 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose, onSelect }) 
                   <div className="classification-items">
                     {recipe.match.important_missing.map((ingredient, index) => (
                       <div key={index} className="classification-item">
-                        {ingredient}
+                        {ingredient.replace(/^\[?"|"\]?$/g, '').trim()}
                       </div>
                     ))}
                   </div>
@@ -156,7 +161,7 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose, onSelect }) 
                   <div className="classification-items">
                     {recipe.match.replaceable_missing.map((ingredient, index) => (
                       <div key={index} className="classification-item">
-                        {ingredient}
+                        {ingredient.replace(/^\[?"|"\]?$/g, '').trim()}
                       </div>
                     ))}
                   </div>
@@ -168,11 +173,11 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose, onSelect }) 
                   <h5>💡 Substitution Suggestions:</h5>
                   {Object.entries(recipe.match.substitution_suggestions).map(([ingredient, suggestions]) => (
                     <div key={ingredient} style={{ marginBottom: '0.5rem' }}>
-                      <strong>{ingredient}:</strong>
+                      <strong>{ingredient.replace(/^\[?"|"\]?$/g, '').trim()}:</strong>
                       <div className="substitution-list">
                         {suggestions.map((suggestion, index) => (
                           <span key={index} className="substitution-item">
-                            {suggestion}
+                            {suggestion.replace(/^\[?"|"\]?$/g, '').trim()}
                           </span>
                         ))}
                       </div>
@@ -187,9 +192,9 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose, onSelect }) 
             <div className="ingredients-section">
               <h3>Ingredients</h3>
               <div className="ingredients-list">
-                {recipe.ingredients && recipe.ingredients.map((ingredient, index) => (
+                {displayIngredients.map((ingredient, index) => (
                   <div key={index} className="ingredient-item">
-                    <span className="ingredient-checkbox">☐</span>
+                    <span className="ingredient-checkbox">□</span>
                     <span className="ingredient-name">{ingredient}</span>
                   </div>
                 ))}
@@ -199,7 +204,7 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose, onSelect }) 
             <div className="steps-section">
               <h3>Instructions</h3>
               <div className="steps-list">
-                {recipe.instructions && recipe.instructions.map((step, index) => (
+                {displayInstructions.map((step, index) => (
                   <div key={index} className="step-item">
                     <div className="step-number">{index + 1}</div>
                     <div className="step-content">{step}</div>
@@ -233,7 +238,7 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose, onSelect }) 
                   <div className="missing-list-detailed">
                     {recipe.match.missing.map((ingredient, index) => (
                       <span key={index} className="missing-item-detailed">
-                        {ingredient}
+                        {ingredient.replace(/^\[?"|"\]?$/g, '').trim()}
                       </span>
                     ))}
                   </div>

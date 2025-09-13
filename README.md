@@ -32,6 +32,18 @@ A modern, AI-powered recipe discovery platform built with FastAPI and React, fea
 - Conda/Miniconda
 - Ollama (for AI chatbot)
 
+### Environment Setup
+
+1. **Copy environment files:**
+   ```bash
+   cp backend/env.example backend/.env
+   cp frontend/env.example frontend/.env
+   ```
+
+2. **Configure your environment variables:**
+   - Edit `backend/.env` with your FatSecret API credentials
+   - Edit `frontend/.env` with your backend URL
+
 ### What's Included vs. What You Need to Install
 
 **✅ Included in Repository:**
@@ -83,6 +95,50 @@ pip install -r requirements.txt
 
 # Start the backend
 python main.py
+```
+
+## 🚀 Production Deployment
+
+### Production Startup
+```bash
+# Use production startup script
+./start_production.sh
+
+# Or manually:
+export HOST=0.0.0.0
+export PORT=8000
+export RELOAD=false
+export CORS_ORIGINS=https://yourdomain.com
+cd backend && python main.py
+```
+
+## 🌐 Environment Variables
+
+### Backend Configuration (`backend/.env`)
+```bash
+# Server settings
+HOST=0.0.0.0
+PORT=8000
+RELOAD=false
+LOG_LEVEL=info
+
+# CORS (comma-separated origins)
+CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
+
+# Ollama configuration
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=llama2:7b
+
+# FatSecret API
+FATSECRET_CLIENT_ID=your_client_id
+FATSECRET_CLIENT_SECRET=your_client_secret
+```
+
+### Frontend Configuration (`frontend/.env`)
+```bash
+# Backend API URL
+REACT_APP_API_URL=http://localhost:8000/api
+# For production: https://your-backend-domain.com/api
 ```
 
 #### Frontend Setup

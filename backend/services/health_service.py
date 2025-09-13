@@ -7,10 +7,11 @@ import base64
 import urllib.parse
 from typing import List, Dict, Any, Optional
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from root .env file
+load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / ".env")
 
 class HealthService:
     def __init__(self):
@@ -159,47 +160,76 @@ class HealthService:
                 print(f"No access token available for {ingredient}")
                 return None
             
-            # Prepare API request parameters
-            params = {
+            # Step 1: Search for food items
+            search_params = {
                 'method': 'foods.search',
                 'search_expression': ingredient,
                 'format': 'json'
             }
             
-            # Make API request with OAuth 2.0 Bearer token
             headers = {
                 'Authorization': f'Bearer {access_token}',
                 'Content-Type': 'application/json'
             }
             
-            print(f"Making OAuth 2.0 API request for '{ingredient}'...")
+            print(f"Searching for '{ingredient}'...")
             
-            response = await client.get(self.base_url, params=params, headers=headers)
+            search_response = await client.get(self.base_url, params=search_params, headers=headers)
             
-            print(f"Response status: {response.status_code}")
-            
-            if response.status_code == 200:
-                data = response.json()
-                print(f"Response data keys: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
-                
-                # Check for API errors
-                if 'error' in data:
-                    error_code = data['error'].get('code', 'unknown')
-                    error_message = data['error'].get('message', 'Unknown error')
-                    
-                    # Handle specific error cases
-                    if error_code == 21:  # Invalid IP address
-                        print(f"⚠️ FatSecret API: IP address not whitelisted. Using fallback scoring.")
-                        print(f"   To use the API, add your IP address to the FatSecret app settings.")
-                    else:
-                        print(f"API Error {error_code}: {error_message}")
-                    return None
-                
-                return self._parse_nutritional_data(data)
-            else:
-                print(f"API request failed with status {response.status_code}")
-                print(f"Response text: {response.text[:500]}...")
+            if search_response.status_code != 200:
+                print(f"Search failed with status {search_response.status_code}")
                 return None
+            
+            search_data = search_response.json()
+            
+            # Check for API errors
+            if 'error' in search_data:
+                error_code = search_data['error'].get('code', 'unknown')
+                error_message = search_data['error'].get('message', 'Unknown error')
+                
+                if error_code == 21:  # Invalid IP address
+                    print(f"⚠️ FatSecret API: IP address not whitelisted. Using fallback scoring.")
+                    print(f"   To use the API, add your IP address to the FatSecret app settings.")
+                else:
+                    print(f"API Error {error_code}: {error_message}")
+                return None
+            
+            # Step 2: Get detailed nutritional info for the first food item
+            foods = search_data.get('foods', {}).get('food', [])
+            if not foods:
+                print(f"No foods found for '{ingredient}'")
+                return None
+            
+            # Get the first food item
+            food = foods[0] if isinstance(foods, list) else foods
+            food_id = food.get('food_id')
+            
+            if not food_id:
+                print(f"No food_id found for '{ingredient}'")
+                return None
+            
+            # Step 3: Get detailed nutritional information
+            nutrition_params = {
+                'method': 'food.get.v2',
+                'food_id': food_id,
+                'format': 'json'
+            }
+            
+            print(f"Getting nutrition for food_id {food_id}...")
+            
+            nutrition_response = await client.get(self.base_url, params=nutrition_params, headers=headers)
+            
+            if nutrition_response.status_code != 200:
+                print(f"Nutrition request failed with status {nutrition_response.status_code}")
+                return None
+            
+            nutrition_data = nutrition_response.json()
+            
+            if 'error' in nutrition_data:
+                print(f"Nutrition API Error: {nutrition_data['error']}")
+                return None
+            
+            return self._parse_nutritional_data(nutrition_data)
                 
         except Exception as e:
             print(f"Error searching for {ingredient}: {e}")
@@ -236,21 +266,29 @@ class HealthService:
     def _parse_nutritional_data(self, api_response: Dict[str, Any]) -> Dict[str, Any]:
         """Parse nutritional data from FatSecret API response"""
         try:
-            foods = api_response.get('foods', {}).get('food', [])
-            if not foods:
+            # Handle both search response and detailed food response
+            if 'foods' in api_response:
+                # This is a search response - we shouldn't be here anymore
+                print("Warning: Received search response in _parse_nutritional_data")
                 return None
             
-            # Get the first food item
-            food = foods[0] if isinstance(foods, list) else foods
+            # This should be a detailed food response
+            food = api_response.get('food', {})
+            if not food:
+                print("No food data in response")
+                return None
+            
             servings = food.get('servings', {}).get('serving', [])
             
             if not servings:
+                print("No servings data found")
                 return None
             
-            # Get the first serving
+            # Get the first serving (usually 100g or 1 serving)
             serving = servings[0] if isinstance(servings, list) else servings
             
-            return {
+            # Parse nutritional values
+            nutritional_data = {
                 'calories': float(serving.get('calories', 0)),
                 'protein': float(serving.get('protein', 0)),
                 'carbs': float(serving.get('carbohydrate', 0)),
@@ -260,8 +298,13 @@ class HealthService:
                 'sodium': float(serving.get('sodium', 0))
             }
             
+            print(f"Parsed nutritional data: {nutritional_data}")
+            return nutritional_data
+            
         except Exception as e:
             print(f"Error parsing nutritional data: {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def _compute_health_score(self, nutritional_data: Dict[str, Any]) -> Dict[str, Any]:

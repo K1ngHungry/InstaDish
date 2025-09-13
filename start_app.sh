@@ -53,9 +53,10 @@ fi
 
 echo "✅ Conda environment activated: $CONDA_DEFAULT_ENV"
 
-# Check if Ollama is running
-echo "🤖 Checking Ollama service..."
-if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+# Check if Ollama is running (configurable via environment)
+OLLAMA_URL=${OLLAMA_URL:-"http://localhost:11434"}
+echo "🤖 Checking Ollama service at $OLLAMA_URL..."
+if curl -s $OLLAMA_URL/api/tags > /dev/null 2>&1; then
     echo "✅ Ollama is already running"
 else
     echo "🚀 Starting Ollama service..."
@@ -65,10 +66,15 @@ else
     echo "✅ Ollama started"
 fi
 
+# Get configuration from environment variables
+HOST=${HOST:-"0.0.0.0"}
+PORT=${PORT:-"8000"}
+RELOAD=${RELOAD:-"true"}
+
 # Start backend in background
 echo "🔧 Starting FastAPI backend..."
 cd backend
-python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload &
+python -m uvicorn main:app --host $HOST --port $PORT --reload &
 BACKEND_PID=$!
 
 # Wait a moment for backend to start
@@ -83,9 +89,9 @@ FRONTEND_PID=$!
 echo ""
 echo "🎉 InstaDish is starting up!"
 echo "📱 Frontend: http://localhost:3000"
-echo "🔧 Backend:  http://localhost:8000"
-echo "🤖 Ollama:   http://localhost:11434"
-echo "📊 Health:   http://localhost:8000/health"
+echo "🔧 Backend:  http://$HOST:$PORT"
+echo "🤖 Ollama:   $OLLAMA_URL"
+echo "📊 Health:   http://$HOST:$PORT/health"
 echo ""
 echo "Press Ctrl+C to stop all services"
 

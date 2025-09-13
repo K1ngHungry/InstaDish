@@ -3,6 +3,7 @@ import json
 import pandas as pd
 import numpy as np
 import faiss
+import re
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict, Any, Optional
 import asyncio
@@ -87,6 +88,84 @@ class RAGService:
         # Pre-load pattern analysis for better performance
         await self.preload_pattern_analysis()
         
+    def _clean_ingredient_list(self, ingredient_string):
+        """Parse ingredient string from CSV as JSON array"""
+        if pd.isna(ingredient_string):
+            return []
+        
+        try:
+            import json
+            # Try to parse as JSON first
+            ingredients = json.loads(ingredient_string)
+            if isinstance(ingredients, list):
+                return ingredients
+        except:
+            pass
+        
+        # If JSON parsing fails, try to split by comma and clean
+        try:
+            # Remove brackets and quotes, then split by comma
+            cleaned = str(ingredient_string).strip()
+            if cleaned.startswith('[') and cleaned.endswith(']'):
+                cleaned = cleaned[1:-1]
+            
+            # Split by comma and clean each item
+            ingredients = []
+            for item in cleaned.split(','):
+                item = item.strip()
+                # Remove quotes
+                if item.startswith('"') and item.endswith('"'):
+                    item = item[1:-1]
+                elif item.startswith("'") and item.endswith("'"):
+                    item = item[1:-1]
+                
+                if item and item.strip():
+                    ingredients.append(item.strip())
+            
+            return ingredients
+        except Exception as e:
+            print(f"Failed to parse ingredients: {e}")
+            return []
+
+    def _clean_instruction_list(self, instruction_string):
+        """Parse instruction string from CSV as JSON array"""
+        if pd.isna(instruction_string):
+            return []
+        
+        try:
+            import json
+            # Try to parse as JSON first
+            instructions = json.loads(instruction_string)
+            if isinstance(instructions, list):
+                return instructions
+        except:
+            pass
+        
+        # If JSON parsing fails, try to split by comma and clean
+        try:
+            # Remove brackets and quotes, then split by comma
+            cleaned = str(instruction_string).strip()
+            if cleaned.startswith('[') and cleaned.endswith(']'):
+                cleaned = cleaned[1:-1]
+            
+            # Split by comma and clean each item
+            instructions = []
+            for item in cleaned.split(','):
+                item = item.strip()
+                # Remove quotes
+                if item.startswith('"') and item.endswith('"'):
+                    item = item[1:-1]
+                elif item.startswith("'") and item.endswith("'"):
+                    item = item[1:-1]
+                
+                if item and item.strip():
+                    instructions.append(item.strip())
+            
+            return instructions
+        except Exception as e:
+            print(f"Failed to parse instructions: {e}")
+            return []
+
     async def _load_recipes(self):
         """Load recipes from CSV file"""
         csv_path = Path(__file__).parent.parent.parent / "recipes_small.csv"
@@ -103,15 +182,11 @@ class RAGService:
         for idx, row in df.iterrows():
             recipe_id = idx + 1
             
-            # Parse ingredients
-            ingredients = []
-            if pd.notna(row['Ingredients']):
-                ingredients = [ing.strip() for ing in str(row['Ingredients']).split(',') if ing.strip()]
+            # Parse ingredients with proper cleaning
+            ingredients = self._clean_ingredient_list(row['Ingredients'])
             
-            # Parse instructions
-            instructions = []
-            if pd.notna(row['Instructions']):
-                instructions = [inst.strip() for inst in str(row['Instructions']).split('.') if inst.strip()]
+            # Parse instructions with proper cleaning
+            instructions = self._clean_instruction_list(row['Instructions'])
             
             # Create ingredient tags for matching
             ingredient_tags = []

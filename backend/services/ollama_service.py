@@ -1,11 +1,17 @@
 import httpx
 import json
+import os
 from typing import List, Dict, Any, Optional
+from dotenv import load_dotenv
+from pathlib import Path
+
+# Load environment variables from root .env file
+load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / ".env")
 
 class OllamaService:
-    def __init__(self, base_url: str = "http://localhost:11434"):
-        self.base_url = base_url
-        self.model = "llama2:7b"
+    def __init__(self, base_url: str = None):
+        self.base_url = base_url or os.getenv("OLLAMA_URL", "http://localhost:11434")
+        self.model = os.getenv("OLLAMA_MODEL", "llama2:7b")
         
     async def generate_response(self, message: str, user_ingredients: List[str], relevant_recipes: List[Dict[str, Any]], selected_recipe: Dict[str, Any] = None) -> str:
         """Generate AI response using Ollama with RAG context"""

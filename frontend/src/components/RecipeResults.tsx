@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import RecipeSorting from './common/RecipeSorting';
+import { formatIngredientsPreview, formatMissingIngredients } from '../utils/recipeUtils';
 
 interface Recipe {
   id: number;
@@ -74,6 +75,7 @@ const RecipeResults: React.FC<RecipeResultsProps> = ({
 }) => {
   const [sortBy, setSortBy] = useState('match');
   const [sortOrder, setSortOrder] = useState('desc');
+
 
   const handleSortChange = (newSortBy: string, newSortOrder: string) => {
     setSortBy(newSortBy);
@@ -185,16 +187,12 @@ const RecipeResults: React.FC<RecipeResultsProps> = ({
 
             <div className="recipe-ingredients">
               <strong>Ingredients:</strong>
-              <p>{recipe.ingredients.slice(0, 3).join(', ')}</p>
-              {recipe.ingredients.length > 3 && (
-                <p>+{recipe.ingredients.length - 3} more...</p>
-              )}
+              <p>{formatIngredientsPreview(recipe.ingredients)}</p>
             </div>
 
             {recipe.match.missing.length > 0 && (
               <div className="missing-ingredients">
-                <strong>Missing:</strong> {recipe.match.missing.slice(0, 2).join(', ')}
-                {recipe.match.missing.length > 2 && ` +${recipe.match.missing.length - 2} more`}
+                <strong>Missing:</strong> {formatMissingIngredients(recipe.match.missing)}
               </div>
             )}
           </div>
