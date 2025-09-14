@@ -13,17 +13,22 @@ A modern, AI-powered recipe discovery platform built with FastAPI and React, fea
 - **📌 Recipe Selection**: Select a recipe to get focused AI advice and relevant quick questions
 - **💾 Persistent Embeddings**: Fast startup with cached vector embeddings (1,339 recipes)
 - **📱 Responsive Design**: Beautiful, mobile-friendly interface
-- **🔄 Auto-Recovery**: Robust startup script with process monitoring and auto-restart
+- **🔧 Configurable**: Environment-variable-driven deployment and configuration
 
 ## 🏗️ Architecture
 
 - **Backend**: FastAPI with Python 3.9+ (async/await patterns)
-- **Frontend**: React with TypeScript, modern hooks-based architecture
-- **AI/ML**: FAISS vector database, sentence-transformers, Ollama (LLaMA 2:7b)
-- **APIs**: FatSecret API (OAuth 2.0) for nutritional data
-- **Data**: 1,339 real recipes from CSV database with persistent embeddings
+- **Frontend**: React 19 with TypeScript, modern hooks-based architecture
+- **AI/ML**: FAISS vector database, sentence-transformers, RAG architecture
+- **LLM**: Ollama integration with LLaMA 2:7b for contextual cooking assistant
+- **APIs**: FatSecret API (OAuth 2.0) for nutritional health scoring
+- **Data**: 1,339 real recipes from CSV database with pre-computed embeddings
 - **Environment**: Conda for Python dependency management
-- **Process Management**: Manual startup with configurable environment variables
+- **Deployment**: Environment-variable-driven configuration for cloud deployment
+
+## 🔧 Tech Stack
+
+**(FastAPI | React/TypeScript | FAISS | Ollama | FatSecret API)**
 
 ## 🚀 Quick Start
 
@@ -229,6 +234,8 @@ InstaDish/
 ├── recipes_small.csv       # Recipe database (1,339 recipes)
 ├── .env.example           # Environment configuration template
 ├── .env                   # Local environment configuration (create from example)
+├── start.sh               # Manual startup script (optional)
+├── stop.sh                # Process cleanup script (optional)
 ├── STARTUP_GUIDE.md       # Detailed startup instructions
 └── README.md
 ```
@@ -408,6 +415,41 @@ ps aux | grep -E "(uvicorn|node|ollama)"
 pkill -f "uvicorn main:app"
 pkill -f "react-scripts start"
 pkill -f "ollama serve"
+
+# Use optional scripts (if available)
+./start.sh  # Start all services
+./stop.sh   # Stop all services
+```
+
+## 🚀 Deployment
+
+### Render (Backend) + Vercel (Frontend)
+```bash
+# Backend deployment to Render:
+# 1. Connect GitHub repo to Render
+# 2. Set environment variables in Render dashboard
+# 3. Build command: cd backend && pip install -r requirements.txt
+# 4. Start command: cd backend && python -m uvicorn main:app --host 0.0.0.0 --port $PORT
+
+# Frontend deployment to Vercel:
+# 1. Connect GitHub repo to Vercel
+# 2. Set REACT_APP_API_URL environment variable
+# 3. Build command: cd frontend && npm run build
+# 4. Output directory: frontend/build
+```
+
+### Environment Variables for Production
+```bash
+# Backend (Render)
+HOST=0.0.0.0
+PORT=10000
+RELOAD=false
+CORS_ORIGINS=https://your-frontend.vercel.app
+FATSECRET_CLIENT_ID=your_client_id
+FATSECRET_CLIENT_SECRET=your_client_secret
+
+# Frontend (Vercel)
+REACT_APP_API_URL=https://your-backend.onrender.com/api
 ```
 
 ## 📝 License
